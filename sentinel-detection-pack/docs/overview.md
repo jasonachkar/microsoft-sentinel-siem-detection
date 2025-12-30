@@ -18,3 +18,6 @@ This repository provides a curated set of Microsoft Sentinel scheduled analytics
 
 ## Normalization notes
 Queries normalize key fields (`TimeGenerated`, `Account`, `IPAddress`, `DeviceName`, `AppDisplayName`, and similar) to maintain consistency and simplify entity mapping. Field naming follows ASIM-aligned conventions so you can swap in ASIM parsers where available.
+
+## Live data (optional)
+For a read-only live data API that feeds the UI, see `docs/live-data.md`.

@@ -1,0 +1,761 @@
+{
+  "generatedAt": "2025-12-30T19:12:19.437Z",
+  "total": 15,
+  "rules": [
+    {
+      "id": "4d4e41cd-a8b8-49f1-828e-fddbb8d74d12",
+      "name": "Service Principal Creation with Credential Addition",
+      "description": "Detects service principal creation followed quickly by credential addition.\nData sources: AuditLogs (Microsoft Entra ID).\nTuning: adjust CorrelationWindow and allowlist known onboarding automation.\nRecommended actions: verify app ownership, rotate credentials, and review consent grants.\n",
+      "severity": "High",
+      "tactics": [
+        "Persistence",
+        "PrivilegeEscalation"
+      ],
+      "techniques": [
+        "T1136.003"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1D",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "cloud",
+      "dataSources": [
+        "AuditLogs (Microsoft Entra ID)"
+      ],
+      "connectors": [
+        "AzureActiveDirectory"
+      ],
+      "dataTypes": [
+        "AuditLogs"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "CloudApplication",
+          "fieldMappings": [
+            {
+              "identifier": "AppId",
+              "columnName": "ServicePrincipalId"
+            },
+            {
+              "identifier": "Name",
+              "columnName": "ServicePrincipalName"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Approved app registrations; CI/CD automation; authorized service onboarding",
+      "query": "let QueryPeriod = 1d;\nlet CorrelationWindow = 1h;\n// Identify service principal creation events.\nlet CreationEvents = AuditLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| where OperationName in (\"Add service principal\", \"Add service principal (preview)\")\n| extend TargetResources = todynamic(TargetResources)\n| extend ServicePrincipalId = tostring(TargetResources[0].id)\n| extend ServicePrincipalName = tostring(TargetResources[0].displayName)\n| extend Creator = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName), \"Unknown\")\n| where isnotempty(ServicePrincipalId)\n| project CreationTime=TimeGenerated, ServicePrincipalId, ServicePrincipalName, Creator;\n// Identify credential additions for service principals.\nlet CredentialEvents = AuditLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| where OperationName has_any (\"Add service principal credentials\", \"Add key credentials\", \"Add password credentials\")\n| extend TargetResources = todynamic(TargetResources)\n| extend ServicePrincipalId = tostring(TargetResources[0].id)\n| extend ServicePrincipalName = tostring(TargetResources[0].displayName)\n| extend CredentialAdder = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName), \"Unknown\")\n| where isnotempty(ServicePrincipalId)\n| project CredentialTime=TimeGenerated, ServicePrincipalId, ServicePrincipalName, CredentialAdder, OperationName, Result;\n// Correlate creation and credential addition within a short window.\nCreationEvents\n| join kind=inner (CredentialEvents) on ServicePrincipalId\n| where CredentialTime between (CreationTime .. CreationTime + CorrelationWindow)\n| extend Account = CredentialAdder\n| project TimeGenerated=CredentialTime, Account, ServicePrincipalId, ServicePrincipalName, Creator, CredentialAdder, OperationName, Result, TimeSinceCreation=CredentialTime-CreationTime\n"
+    },
+    {
+      "id": "78c1c5cb-364d-4133-b7d1-46dbe3f0c629",
+      "name": "Key Vault Secret Access Anomaly",
+      "description": "Detects new identity/IP combinations accessing Key Vault secrets with elevated volume.\nData sources: AzureDiagnostics (Key Vault).\nTuning: adjust MinSecretGets and allowlist trusted service IPs or automation.\nRecommended actions: verify client identity, review secret usage, and rotate affected secrets if needed.\n",
+      "severity": "High",
+      "tactics": [
+        "CredentialAccess",
+        "Collection"
+      ],
+      "techniques": [
+        "T1552.004"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "cloud",
+      "dataSources": [
+        "AzureDiagnostics (Key Vault)"
+      ],
+      "connectors": [
+        "AzureDiagnostics"
+      ],
+      "dataTypes": [
+        "AzureDiagnostics"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "IPAddress"
+            }
+          ]
+        },
+        {
+          "entityType": "AzureResource",
+          "fieldMappings": [
+            {
+              "identifier": "ResourceId",
+              "columnName": "ResourceId"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "New build agents; secret rotation jobs; planned migrations",
+      "query": "let BaselinePeriod = 14d;\nlet DetectionWindow = 1h;\nlet MinSecretGets = 5;\nlet AllowedIPs = dynamic([]); // Optional allowlist for trusted service IPs\n// Normalize Key Vault secret access events.\nlet KeyVaultLogs = AzureDiagnostics\n| where TimeGenerated >= ago(BaselinePeriod)\n| where ResourceProvider == \"MICROSOFT.KEYVAULT\"\n| where tostring(OperationName) has \"Secret\"\n| extend IPAddress = tostring(CallerIPAddress)\n| extend Identity = coalesce(tostring(Identity), tostring(CallerObjectId), tostring(Caller), \"Unknown\")\n| extend ResourceId = tostring(ResourceId)\n| extend VaultName = tostring(extract(@\"/vaults/([^/]+)\", 1, ResourceId))\n| extend Operation = tostring(OperationName)\n| where IPAddress !in (AllowedIPs)\n| project TimeGenerated, Identity, IPAddress, ResourceId, VaultName, Operation;\n// Build a baseline of identity-to-IP combinations.\nlet Baseline = KeyVaultLogs\n| where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))\n| summarize by Identity, IPAddress;\n// Identify recent access from new IPs with high volume.\nlet Recent = KeyVaultLogs\n| where TimeGenerated >= ago(DetectionWindow)\n| summarize SecretGetCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), Operations=make_set(Operation, 5)\n  by Identity, IPAddress, ResourceId, VaultName;\nRecent\n| join kind=leftanti Baseline on Identity, IPAddress\n| where SecretGetCount >= MinSecretGets\n| extend Account = Identity\n| project TimeGenerated=LastSeen, Account, IPAddress, VaultName, ResourceId, SecretGetCount, Operations, FirstSeen, LastSeen\n"
+    },
+    {
+      "id": "dba8a2af-a17b-43fb-b5b7-09b2e659dd3a",
+      "name": "Rare Admin Operations (Entra ID + Azure Activity)",
+      "description": "Identifies high-impact admin operations that are rare for the initiating actor.\nData sources: AuditLogs (Microsoft Entra ID), AzureActivity.\nTuning: adjust MaxHistoricalCount and tailor the high-impact operation lists.\nRecommended actions: validate change control, confirm actor legitimacy, and review affected resources.\n",
+      "severity": "Medium",
+      "tactics": [
+        "DefenseEvasion"
+      ],
+      "techniques": [
+        "T1562"
+      ],
+      "queryFrequency": "PT1H",
+      "queryPeriod": "PT1D",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "cloud",
+      "dataSources": [
+        "AuditLogs (Microsoft Entra ID)",
+        "AzureActivity"
+      ],
+      "connectors": [
+        "AzureActiveDirectory",
+        "AzureActivity"
+      ],
+      "dataTypes": [
+        "AuditLogs",
+        "AzureActivity"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Actor"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "First-time admin actions; maintenance windows; new admin onboarding",
+      "query": "let BaselinePeriod = 30d;\nlet DetectionWindow = 1d;\nlet MaxHistoricalCount = 1;\n// High-impact Entra ID operations (conditional access, security defaults, authentication policy).\nlet AadOps = AuditLogs\n| where TimeGenerated >= ago(BaselinePeriod)\n| where OperationName has_any (\"Conditional Access\", \"security defaults\", \"authentication methods\", \"Update policy\", \"Delete policy\")\n| extend OperationSource = \"EntraID\"\n| extend Actor = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName), \"Unknown\")\n| extend TargetResource = tostring(TargetResources[0].displayName)\n| extend Operation = tostring(OperationName)\n| project TimeGenerated, OperationSource, Operation, Actor, TargetResource, Result;\n// High-impact Azure resource operations.\nlet AzureOps = AzureActivity\n| where TimeGenerated >= ago(BaselinePeriod)\n| where OperationNameValue in~ (\n    \"Microsoft.Authorization/policyAssignments/delete\",\n    \"Microsoft.Authorization/policyAssignments/write\",\n    \"Microsoft.Authorization/roleAssignments/delete\",\n    \"Microsoft.Authorization/roleAssignments/write\",\n    \"Microsoft.Security/pricings/write\",\n    \"Microsoft.Insights/diagnosticSettings/delete\",\n    \"Microsoft.Insights/diagnosticSettings/write\",\n    \"Microsoft.Network/networkSecurityGroups/securityRules/delete\",\n    \"Microsoft.KeyVault/vaults/accessPolicies/write\"\n  )\n| extend OperationSource = \"AzureActivity\"\n| extend Actor = tostring(Caller)\n| extend TargetResource = tostring(ResourceId)\n| extend Operation = tostring(OperationNameValue)\n| project TimeGenerated, OperationSource, Operation, Actor, TargetResource, Result=ActivityStatusValue;\n// Combine and baseline.\nlet AllOps = union isfuzzy=true AadOps, AzureOps;\nlet Baseline = AllOps\n| where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))\n| summarize HistoricalCount=count() by Actor, OperationSource, Operation;\nlet Recent = AllOps\n| where TimeGenerated >= ago(DetectionWindow)\n| summarize RecentCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), Targets=make_set(TargetResource, 5)\n  by Actor, OperationSource, Operation;\nRecent\n| join kind=leftouter Baseline on Actor, OperationSource, Operation\n| extend HistoricalCount = coalesce(HistoricalCount, 0)\n| where HistoricalCount <= MaxHistoricalCount\n| extend Account = Actor\n| project TimeGenerated=LastSeen, Account, Actor, OperationSource, Operation, HistoricalCount, RecentCount, Targets, FirstSeen, LastSeen\n"
+    },
+    {
+      "id": "508a9f98-7817-4bb0-bf98-e966c3b14bea",
+      "name": "Phishing Attachment Patterns",
+      "description": "Detects inbound email with suspicious attachment types from external senders.\nData sources: EmailEvents, EmailAttachmentInfo (Microsoft 365 Defender).\nTuning: allowlist trusted partner domains and benign attachment extensions.\nRecommended actions: quarantine the message, analyze the attachment, and notify impacted recipients.\n",
+      "severity": "Medium",
+      "tactics": [
+        "InitialAccess"
+      ],
+      "techniques": [
+        "T1566.001"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "email",
+      "dataSources": [
+        "EmailEvents",
+        "EmailAttachmentInfo (Microsoft 365 Defender)"
+      ],
+      "connectors": [
+        "MicrosoftThreatProtection"
+      ],
+      "dataTypes": [
+        "EmailEvents",
+        "EmailAttachmentInfo"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Mailbox",
+          "fieldMappings": [
+            {
+              "identifier": "MailboxPrimaryAddress",
+              "columnName": "PrimaryRecipient"
+            }
+          ]
+        },
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "SenderAddress"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Legitimate partner attachments; internal security testing; bulk mail with archives",
+      "query": "let QueryPeriod = 1h;\nlet BinSize = 15m;\nlet SuspiciousExtensions = dynamic([\"docm\", \"xlsm\", \"js\", \"vbs\", \"lnk\", \"iso\", \"img\", \"rar\", \"zip\", \"7z\", \"exe\", \"dll\"]);\nlet AllowedSenderDomains = dynamic([]); // Add trusted partner domains\nlet AllowedSenderAddresses = dynamic([]); // Add approved external senders\n// Normalize inbound email events.\nlet Emails = EmailEvents\n| where TimeGenerated >= ago(QueryPeriod)\n| where EmailDirection == \"Inbound\"\n| extend SenderAddress = tostring(SenderFromAddress)\n| extend SenderDomain = tostring(SenderFromDomain)\n| where SenderDomain !in (AllowedSenderDomains)\n| where SenderAddress !in (AllowedSenderAddresses)\n| project TimeGenerated, NetworkMessageId, SenderAddress, SenderDomain, RecipientEmailAddress, Subject;\n// Normalize attachment metadata and flag suspicious extensions.\nlet Attachments = EmailAttachmentInfo\n| where TimeGenerated >= ago(QueryPeriod)\n| extend AttachmentExt = tolower(AttachmentFileExtension)\n| where AttachmentExt in (SuspiciousExtensions)\n| project NetworkMessageId, AttachmentName, AttachmentExt, AttachmentSize;\nEmails\n| join kind=inner Attachments on NetworkMessageId\n| summarize SuspiciousAttachmentCount=count(), AttachmentNames=make_set(AttachmentName, 10), Recipients=make_set(RecipientEmailAddress, 10)\n  by bin(TimeGenerated, BinSize), SenderAddress, SenderDomain, Subject, NetworkMessageId\n| where SuspiciousAttachmentCount >= 1\n| extend PrimaryRecipient = tostring(Recipients[0])\n| project TimeGenerated, SenderAddress, SenderDomain, Subject, NetworkMessageId, SuspiciousAttachmentCount, AttachmentNames, Recipients, PrimaryRecipient\n"
+    },
+    {
+      "id": "d0fa0869-a23c-4a16-a154-80123250b257",
+      "name": "Suspicious Inbox Rule External Forward",
+      "description": "Detects inbox rules that forward or redirect email to external domains.\nData sources: OfficeActivity (Office 365).\nTuning: allowlist trusted domains and approved mailboxes.\nRecommended actions: validate rule ownership, remove unauthorized rules, and reset compromised credentials.\n",
+      "severity": "High",
+      "tactics": [
+        "Collection"
+      ],
+      "techniques": [
+        "T1114.003"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "email",
+      "dataSources": [
+        "OfficeActivity (Office 365)"
+      ],
+      "connectors": [
+        "Office365"
+      ],
+      "dataTypes": [
+        "OfficeActivity"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "ClientIP"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Approved mail routing to partners; user-requested forwarding; mailbox migrations",
+      "query": "let QueryPeriod = 1h;\nlet BinSize = 15m;\nlet AllowedDomains = dynamic([]); // Add trusted external domains\nlet AllowedUsers = dynamic([]); // Optional allowlist for approved mailboxes\nOfficeActivity\n| where TimeGenerated >= ago(QueryPeriod)\n| where Operation in (\"New-InboxRule\", \"Set-InboxRule\", \"UpdateInboxRules\")\n| extend Account = tostring(UserId)\n| extend ClientIP = tostring(ClientIP)\n| where isempty(AllowedUsers) or Account !in (AllowedUsers)\n| extend Parameters = todynamic(Parameters)\n| mv-expand Parameters\n| extend ParamName = tostring(Parameters.Name), ParamValue = tostring(Parameters.Value)\n| where ParamName in (\"ForwardTo\", \"RedirectTo\", \"ForwardingSmtpAddress\", \"RecipientAddress\")\n| extend ForwardAddress = tostring(ParamValue)\n| extend ForwardDomain = tolower(extract(@\"@([^;>]+)$\", 1, ForwardAddress))\n| where isnotempty(ForwardDomain)\n| where ForwardDomain !in (AllowedDomains)\n| summarize ForwardCount=count(), ForwardAddresses=make_set(ForwardAddress, 10), ForwardDomains=make_set(ForwardDomain, 10)\n  by bin(TimeGenerated, BinSize), Account, ClientIP, Operation, MailboxOwnerUPN\n| project TimeGenerated, Account, ClientIP, Operation, MailboxOwnerUPN, ForwardCount, ForwardAddresses, ForwardDomains\n"
+    },
+    {
+      "id": "2cbf0368-8c26-4b6f-bc3f-15aa9e93ccfb",
+      "name": "Credential Dumping via LSASS Access",
+      "description": "Detects process creation events associated with LSASS memory access or known dump tooling.\nData sources: DeviceProcessEvents (Microsoft Defender for Endpoint).\nTuning: allowlist approved dump tools or security products; refine SuspiciousCommandFragments.\nRecommended actions: isolate host, collect memory telemetry, and reset affected credentials.\n",
+      "severity": "High",
+      "tactics": [
+        "CredentialAccess"
+      ],
+      "techniques": [
+        "T1003.001"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "endpoint",
+      "dataSources": [
+        "DeviceProcessEvents (Microsoft Defender for Endpoint)"
+      ],
+      "connectors": [
+        "MicrosoftThreatProtection"
+      ],
+      "dataTypes": [
+        "DeviceProcessEvents"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "Host",
+          "fieldMappings": [
+            {
+              "identifier": "HostName",
+              "columnName": "DeviceName"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Approved memory dump tools; endpoint security products; legitimate troubleshooting",
+      "query": "let QueryPeriod = 1h;\nlet SuspiciousProcessNames = dynamic([\"procdump.exe\", \"rundll32.exe\", \"taskmgr.exe\", \"comsvcs.dll\", \"dumpert.exe\", \"pypykatz.exe\", \"mimikatz.exe\"]);\nlet SuspiciousCommandFragments = dynamic([\"lsass\", \"comsvcs.dll\", \"MiniDump\", \"-ma\", \"-accepteula\"]);\nlet AllowedTools = dynamic([]); // Optional allowlist for approved memory dump utilities\nDeviceProcessEvents\n| where TimeGenerated >= ago(QueryPeriod)\n| where ActionType == \"ProcessCreated\"\n| extend ProcessName = tostring(FileName)\n| extend CommandLine = tostring(ProcessCommandLine)\n| extend Account = coalesce(tostring(InitiatingProcessAccountName), tostring(AccountName))\n| extend DeviceName = tostring(DeviceName)\n// Identify LSASS access patterns or known dump tooling.\n| where ProcessName in~ (SuspiciousProcessNames) or CommandLine has_any (SuspiciousCommandFragments)\n| where isempty(AllowedTools) or ProcessName !in~ (AllowedTools)\n| project TimeGenerated, Account, DeviceName, ProcessName, CommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n"
+    },
+    {
+      "id": "f32a9c55-5856-43ca-88b3-47996df8898a",
+      "name": "Local Admin Group Changes",
+      "description": "Detects local user creation followed by additions to the Administrators group.\nData sources: SecurityEvent (Windows Security Events).\nTuning: allowlist expected admin operators and adjust the correlation window.\nRecommended actions: verify change approvals, review endpoint integrity, and audit recent admin activity.\n",
+      "severity": "Medium",
+      "tactics": [
+        "PrivilegeEscalation",
+        "Persistence"
+      ],
+      "techniques": [
+        "T1098"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "endpoint",
+      "dataSources": [
+        "SecurityEvent (Windows Security Events)"
+      ],
+      "connectors": [
+        "SecurityEvents"
+      ],
+      "dataTypes": [
+        "SecurityEvent"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "Host",
+          "fieldMappings": [
+            {
+              "identifier": "HostName",
+              "columnName": "Computer"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Authorized IT admin actions; domain join workflows; endpoint build pipelines",
+      "query": "let QueryPeriod = 1h;\nlet AdminGroupName = \"Administrators\";\nlet AllowedInitiators = dynamic([]); // Optional allowlist for admin operators\n// Detect new local user creation.\nlet NewUsers = SecurityEvent\n| where TimeGenerated >= ago(QueryPeriod)\n| where EventID == 4720\n| extend Computer = tostring(Computer)\n| extend MemberAccount = tostring(TargetUserName)\n| extend AccountDomain = tostring(TargetDomainName)\n| extend Initiator = strcat(tostring(SubjectDomainName), \"\\\\\", tostring(SubjectUserName))\n| project NewUserTime=TimeGenerated, Computer, MemberAccount, AccountDomain, Initiator;\n// Detect additions to the local Administrators group.\nlet AdminAdds = SecurityEvent\n| where TimeGenerated >= ago(QueryPeriod)\n| where EventID == 4732\n| extend Computer = tostring(Computer)\n| extend GroupName = tostring(TargetUserName)\n| where GroupName =~ AdminGroupName\n| extend MemberName = tostring(MemberName)\n| extend MemberAccount = tostring(split(MemberName, \"\\\\\")[-1])\n| extend Initiator = strcat(tostring(SubjectDomainName), \"\\\\\", tostring(SubjectUserName))\n| where Initiator !in (AllowedInitiators)\n| project AdminAddTime=TimeGenerated, Computer, GroupName, MemberName, MemberAccount, Initiator;\n// Correlate new user creation with admin group addition.\nlet NewLocalAdmins = AdminAdds\n| join kind=inner (NewUsers) on Computer, MemberAccount\n| where AdminAddTime between (NewUserTime .. NewUserTime + 1h)\n| extend ChangeType = \"NewLocalAdmin\"\n| project TimeGenerated=AdminAddTime, Account=Initiator, Computer, MemberName, GroupName, ChangeType, NewUserTime;\n// Capture other admin group additions not tied to new local users.\nlet ExistingAdminAdds = AdminAdds\n| join kind=leftanti (NewLocalAdmins | project Computer, MemberAccount, AdminAddTime) on Computer, MemberAccount, AdminAddTime\n| extend ChangeType = \"AdminGroupAdd\"\n| project TimeGenerated=AdminAddTime, Account=Initiator, Computer, MemberName, GroupName, ChangeType, NewUserTime=real(null);\nunion NewLocalAdmins, ExistingAdminAdds\n| project TimeGenerated, Account, Computer, MemberName, GroupName, ChangeType, NewUserTime\n"
+    },
+    {
+      "id": "5aef5e7e-359b-4890-bb93-4c892b0cac40",
+      "name": "Suspicious PowerShell Encoded Command",
+      "description": "Detects PowerShell executions with encoded commands or download cradle patterns.\nData sources: DeviceProcessEvents (Microsoft Defender for Endpoint).\nTuning: adjust MinInstances and allowlist known automation parents or signed scripts.\nRecommended actions: inspect command line, confirm script origin, and isolate host if unauthorized.\n",
+      "severity": "High",
+      "tactics": [
+        "Execution",
+        "CommandAndControl"
+      ],
+      "techniques": [
+        "T1059.001",
+        "T1105"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "endpoint",
+      "dataSources": [
+        "DeviceProcessEvents (Microsoft Defender for Endpoint)"
+      ],
+      "connectors": [
+        "MicrosoftThreatProtection"
+      ],
+      "dataTypes": [
+        "DeviceProcessEvents"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "Host",
+          "fieldMappings": [
+            {
+              "identifier": "HostName",
+              "columnName": "DeviceName"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Approved admin scripts; automation tools; legitimate software installers",
+      "query": "let QueryPeriod = 1h;\nlet MinInstances = 2;\nlet SuspiciousFlags = dynamic([\"-enc\", \"-encodedcommand\", \"-e \", \"-nop\", \"-noni\", \"-w hidden\", \"-windowstyle hidden\"]);\nlet DownloadCradles = dynamic([\"IEX\", \"Invoke-Expression\", \"DownloadString\", \"FromBase64String\", \"Invoke-WebRequest\", \"iwr\", \"curl\", \"wget\", \"bitsadmin\", \"WebClient\"]);\nlet AllowedParents = dynamic([\"explorer.exe\", \"powershell_ise.exe\"]); // Optional allowlist for known benign parents\nDeviceProcessEvents\n| where TimeGenerated >= ago(QueryPeriod)\n| where ActionType == \"ProcessCreated\"\n| where FileName in~ (\"powershell.exe\", \"pwsh.exe\")\n| extend CommandLine = tostring(ProcessCommandLine)\n| extend ParentProcess = tostring(InitiatingProcessFileName)\n| extend Account = coalesce(tostring(InitiatingProcessAccountName), tostring(AccountName))\n| extend DeviceName = tostring(DeviceName)\n// Flag encoded or download cradle usage.\n| where CommandLine has_any (SuspiciousFlags) or CommandLine has_any (DownloadCradles)\n| where isempty(AllowedParents) or ParentProcess !in~ (AllowedParents)\n| summarize Instances=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), CommandSamples=make_set(CommandLine, 5)\n  by Account, DeviceName, ParentProcess, FileName\n| where Instances >= MinInstances\n| project TimeGenerated=LastSeen, Account, DeviceName, ParentProcess, FileName, Instances, CommandSamples\n"
+    },
+    {
+      "id": "b34be2c6-772a-43a9-ab9b-f0e16f32c3be",
+      "name": "Entra ID Impossible Travel Sign-in",
+      "description": "Flags rapid successive sign-ins from different locations for the same user within a short window.\nData sources: SigninLogs (Microsoft Entra ID).\nTuning: adjust MaxTravelTime/MinSpeedKph and allowlist VPN IPs or known travel hubs.\nRecommended actions: validate user travel, check device posture, reset credentials if suspicious.\n",
+      "severity": "Medium",
+      "tactics": [
+        "InitialAccess",
+        "CredentialAccess"
+      ],
+      "techniques": [
+        "T1078.004"
+      ],
+      "queryFrequency": "PT1H",
+      "queryPeriod": "PT24H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "identity",
+      "dataSources": [
+        "SigninLogs (Microsoft Entra ID)"
+      ],
+      "connectors": [
+        "AzureActiveDirectory"
+      ],
+      "dataTypes": [
+        "SigninLogs"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "IPAddress"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Users on VPNs; mobile users; corporate SSO through global proxies",
+      "query": "let QueryPeriod = 24h;\nlet MaxTravelTime = 2h;\nlet MinSpeedKph = 900.0; // Approximate high-speed travel threshold\nlet AllowedCountries = dynamic([]); // Optional allowlist for known travel hubs\nlet AllowedIPs = dynamic([]); // Optional allowlist for trusted VPN IPs\n// Normalize successful sign-ins and extract geolocation fields.\nlet Signins = SigninLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| where ResultType == 0\n| extend Account = tostring(UserPrincipalName)\n| extend IPAddress = tostring(IPAddress)\n| extend AppDisplayName = tostring(AppDisplayName)\n| extend ClientAppUsed = tostring(ClientAppUsed)\n| extend UserAgent = tostring(UserAgent)\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| extend State = tostring(LocationDetails.state)\n| extend City = tostring(LocationDetails.city)\n| extend Geo = todynamic(LocationDetails.geoCoordinates)\n| extend Latitude = todouble(Geo.latitude)\n| extend Longitude = todouble(Geo.longitude)\n| where IPAddress !in (AllowedIPs)\n| project TimeGenerated, Account, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, Country, State, City, Latitude, Longitude;\n// Compare each sign-in to the previous one for the same user.\nSignins\n| sort by Account asc, TimeGenerated asc\n| extend PrevTime = prev(TimeGenerated), PrevCountry = prev(Country), PrevCity = prev(City), PrevIP = prev(IPAddress), PrevLat = prev(Latitude), PrevLon = prev(Longitude)\n| extend TravelTime = TimeGenerated - PrevTime\n| extend DistanceMeters = geo_distance_2points(Latitude, Longitude, PrevLat, PrevLon)\n| extend DistanceKm = DistanceMeters / 1000.0\n| extend SpeedKph = iif(TravelTime > 0s and isfinite(DistanceKm), DistanceKm / (TravelTime / 1h), real(null))\n| where TravelTime <= MaxTravelTime\n| where isnotempty(PrevCountry) and Country != PrevCountry\n| where isnull(SpeedKph) or SpeedKph >= MinSpeedKph\n| where (isempty(AllowedCountries) or Country !in (AllowedCountries) or PrevCountry !in (AllowedCountries))\n| project TimeGenerated, Account, IPAddress, PrevIP, Country, PrevCountry, City, PrevCity, AppDisplayName, ClientAppUsed, UserAgent, TravelTime, DistanceKm, SpeedKph\n"
+    },
+    {
+      "id": "35bde42b-3434-4674-bc4a-42e95a1fe772",
+      "name": "Entra ID MFA Fatigue",
+      "description": "Detects repeated MFA denial/timeout outcomes for the same account and IP.\nData sources: SigninLogs (Microsoft Entra ID).\nTuning: adjust MinMfaDenials and allowlist trusted IPs or expected MFA-heavy apps.\nRecommended actions: contact the user, verify recent sign-ins, and review MFA device registrations.\n",
+      "severity": "Medium",
+      "tactics": [
+        "CredentialAccess"
+      ],
+      "techniques": [
+        "T1621"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT30M",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "identity",
+      "dataSources": [
+        "SigninLogs (Microsoft Entra ID)"
+      ],
+      "connectors": [
+        "AzureActiveDirectory"
+      ],
+      "dataTypes": [
+        "SigninLogs"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "IPAddress"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Users repeatedly mistyping codes; MFA outages; legitimate travel with poor connectivity",
+      "query": "let QueryPeriod = 30m;\nlet BinSize = 10m;\nlet MinMfaDenials = 3;\nlet AllowedIPs = dynamic([]); // Add trusted VPN/office IPs if needed\nlet AllowedApps = dynamic([]); // Optional allowlist for expected MFA-heavy apps\n// Expand authentication steps to isolate MFA denial/timeout outcomes.\nSigninLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| where isnotempty(AuthenticationDetails)\n| extend Account = tostring(UserPrincipalName)\n| extend IPAddress = tostring(IPAddress)\n| extend AppDisplayName = tostring(AppDisplayName)\n| extend ClientAppUsed = tostring(ClientAppUsed)\n| extend UserAgent = tostring(UserAgent)\n| where IPAddress !in (AllowedIPs)\n| where isempty(AllowedApps) or AppDisplayName !in (AllowedApps)\n| extend AuthDetails = todynamic(AuthenticationDetails)\n| mv-expand AuthDetails\n| extend AuthMethod = tostring(AuthDetails.authenticationMethod)\n| extend AuthStepResult = tostring(AuthDetails.authenticationStepResultDetail)\n| where AuthStepResult has_any (\"MFA\", \"multi-factor\")\n| where AuthStepResult has_any (\"denied\", \"reject\", \"declined\", \"timeout\", \"fail\")\n| summarize MfaPromptCount=count(), Apps=make_set(AppDisplayName, 5), ResultDetails=make_set(AuthStepResult, 5)\n  by bin(TimeGenerated, BinSize), Account, IPAddress, ClientAppUsed, UserAgent\n| where MfaPromptCount >= MinMfaDenials\n| project TimeGenerated, Account, IPAddress, ClientAppUsed, UserAgent, MfaPromptCount, Apps, ResultDetails\n"
+    },
+    {
+      "id": "0710c724-a738-4b0f-af52-947ba4f01c0d",
+      "name": "Entra ID Password Spray",
+      "description": "Detects password spraying across multiple accounts from a single source IP using invalid credential outcomes.\nData sources: SigninLogs (Microsoft Entra ID).\nTuning: adjust MinDistinctAccounts/MinFailures and allowlist trusted egress IPs.\nRecommended actions: confirm source IP ownership, review targeted accounts, enforce MFA and account lockout policies.\n",
+      "severity": "High",
+      "tactics": [
+        "CredentialAccess",
+        "InitialAccess"
+      ],
+      "techniques": [
+        "T1110.003"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "identity",
+      "dataSources": [
+        "SigninLogs (Microsoft Entra ID)"
+      ],
+      "connectors": [
+        "AzureActiveDirectory"
+      ],
+      "dataTypes": [
+        "SigninLogs"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "PrimaryAccount"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "IPAddress"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Shared proxy/VPN egress; bulk account lockouts; misconfigured apps with stale credentials",
+      "query": "let QueryPeriod = 1h;\nlet BinSize = 15m;\nlet MinDistinctAccounts = 8;\nlet MinFailures = 20;\nlet AllowedIPs = dynamic([]); // Add trusted egress/VPN IPs here\nlet AllowedClientApps = dynamic([]); // Optional: exclude known noisy client apps\n// Normalize failed sign-ins with invalid credential outcomes.\nlet FailedSignins = SigninLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| extend ResultTypeStr = tostring(ResultType)\n| where ResultTypeStr in (\"50126\", \"50125\", \"50053\", \"50055\", \"50057\")\n| extend Account = tostring(UserPrincipalName)\n| extend IPAddress = tostring(IPAddress)\n| extend AppDisplayName = tostring(AppDisplayName)\n| extend ClientAppUsed = tostring(ClientAppUsed)\n| extend UserAgent = tostring(UserAgent)\n| where IPAddress !in (AllowedIPs)\n| where isempty(AllowedClientApps) or ClientAppUsed !in (AllowedClientApps)\n| project TimeGenerated, Account, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, ResultTypeStr;\n// Aggregate by IP to identify high-volume failures across multiple accounts.\nFailedSignins\n| summarize FailedCount=count(), DistinctAccounts=dcount(Account), Accounts=make_set(Account, 25), ResultTypes=make_set(ResultTypeStr, 10)\n  by bin(TimeGenerated, BinSize), IPAddress, AppDisplayName, ClientAppUsed, UserAgent\n| where FailedCount >= MinFailures and DistinctAccounts >= MinDistinctAccounts\n| extend Account = \"Multiple\"\n| extend PrimaryAccount = tostring(Accounts[0])\n| project TimeGenerated, Account, PrimaryAccount, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, FailedCount, DistinctAccounts, Accounts, ResultTypes\n"
+    },
+    {
+      "id": "49207dbc-e316-4b48-94d6-68d6c2014d18",
+      "name": "Entra ID Privileged Role Assignment",
+      "description": "Detects assignments to high-privilege Entra ID roles.\nData sources: AuditLogs (Microsoft Entra ID).\nTuning: allowlist known break-glass or automation accounts and expected role changes.\nRecommended actions: validate change request, review initiating principal, and verify MFA and conditional access.\n",
+      "severity": "High",
+      "tactics": [
+        "Persistence",
+        "PrivilegeEscalation"
+      ],
+      "techniques": [
+        "T1098.003"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "identity",
+      "dataSources": [
+        "AuditLogs (Microsoft Entra ID)"
+      ],
+      "connectors": [
+        "AzureActiveDirectory"
+      ],
+      "dataTypes": [
+        "AuditLogs"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Initiator"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Approved admin role changes; just-in-time access workflows; role-based automation",
+      "query": "let QueryPeriod = 1h;\nlet PrivilegedRoles = dynamic([\n  \"Global Administrator\",\n  \"Privileged Role Administrator\",\n  \"Security Administrator\",\n  \"Conditional Access Administrator\",\n  \"Exchange Administrator\",\n  \"SharePoint Administrator\",\n  \"User Administrator\",\n  \"Application Administrator\",\n  \"Cloud Application Administrator\"\n]);\nlet AllowedInitiators = dynamic([]); // Optional allowlist for break-glass or service accounts\nAuditLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| where OperationName in (\"Add member to role\", \"Add eligible member to role\", \"Add member to directory role\")\n| extend Initiator = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName), \"Unknown\")\n| where Initiator !in (AllowedInitiators)\n// Expand target resources to identify assigned roles and target accounts.\n| mv-expand TargetResources\n| extend TargetType = tostring(TargetResources.type)\n| extend TargetDisplayName = tostring(TargetResources.displayName)\n| summarize RoleNames=make_set_if(TargetDisplayName, TargetType in (\"Role\", \"DirectoryRole\"), 10),\n           TargetAccounts=make_set_if(TargetDisplayName, TargetType in (\"User\", \"ServicePrincipal\"), 10)\n  by TimeGenerated, Initiator, OperationName, Result\n| mv-expand RoleName = RoleNames\n| where RoleName in~ (PrivilegedRoles)\n| extend Account = Initiator\n| project TimeGenerated, Account, Initiator, RoleName, TargetAccounts, OperationName, Result\n"
+    },
+    {
+      "id": "db69f50b-3f00-46cd-9f47-8ad0bc780209",
+      "name": "Entra ID Risky Sign-in from TOR or Watchlist",
+      "description": "Detects risky sign-ins based on Entra risk signals or optional TOR/high-risk IP watchlists.\nData sources: SigninLogs (Microsoft Entra ID).\nTuning: populate RiskyIPs or configure a watchlist; allowlist trusted VPN egress.\nRecommended actions: verify user legitimacy, inspect device posture, and enforce conditional access.\n",
+      "severity": "High",
+      "tactics": [
+        "InitialAccess",
+        "CommandAndControl"
+      ],
+      "techniques": [
+        "T1090.003",
+        "T1078.004"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "identity",
+      "dataSources": [
+        "SigninLogs (Microsoft Entra ID)"
+      ],
+      "connectors": [
+        "AzureActiveDirectory"
+      ],
+      "dataTypes": [
+        "SigninLogs"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "IPAddress"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Legitimate travel; corporate proxies flagged as risky; third-party MFA testing",
+      "query": "let QueryPeriod = 1h;\nlet RiskLevels = dynamic([\"high\", \"medium\"]);\nlet AllowedIPs = dynamic([]); // Add trusted VPN/office IPs here\nlet RiskyIPs = dynamic([]); // Optional: populate from a watchlist of TOR/high-risk IPs\n// Tip: replace RiskyIPs with a watchlist query if available in your workspace.\n// let RiskyIPs = (_GetWatchlist(\"HighRiskIPs\") | project IPAddress=tostring(SearchKey));\nSigninLogs\n| where TimeGenerated >= ago(QueryPeriod)\n| extend Account = tostring(UserPrincipalName)\n| extend IPAddress = tostring(IPAddress)\n| extend AppDisplayName = tostring(AppDisplayName)\n| extend ClientAppUsed = tostring(ClientAppUsed)\n| extend UserAgent = tostring(UserAgent)\n| extend RiskLevel = tostring(RiskLevelDuringSignIn)\n| extend RiskState = tostring(RiskState)\n| extend RiskDetail = tostring(RiskDetail)\n| where IPAddress !in (AllowedIPs)\n| where RiskLevel in~ (RiskLevels) or IPAddress in (RiskyIPs)\n| extend IsWatchlistMatch = IPAddress in (RiskyIPs)\n| project TimeGenerated, Account, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, RiskLevel, RiskState, RiskDetail, IsWatchlistMatch\n"
+    },
+    {
+      "id": "5b584395-6a5c-46c8-8de7-1239c7188fe5",
+      "name": "Unusual Outbound Data Volume to Rare Destination",
+      "description": "Detects high outbound data volume to destinations not seen in the baseline period.\nData sources: CommonSecurityLog (CEF/Syslog).\nTuning: adjust MinBytesOut and allowlist known data-transfer services.\nRecommended actions: validate destination ownership, review data transfer context, and inspect source host.\n",
+      "severity": "High",
+      "tactics": [
+        "Exfiltration"
+      ],
+      "techniques": [
+        "T1041"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "network",
+      "dataSources": [
+        "CommonSecurityLog (CEF/Syslog)"
+      ],
+      "connectors": [
+        "CommonSecurityLog"
+      ],
+      "dataTypes": [
+        "CommonSecurityLog"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "SourceIP"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "DestinationIP"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "Backup jobs; legitimate large transfers; new SaaS endpoints",
+      "query": "let BaselinePeriod = 14d;\nlet DetectionWindow = 1h;\nlet MinBytesOut = 50000000; // 50 MB\nlet AllowedDestinations = dynamic([]); // Optional allowlist for approved destinations\nlet AllowedSources = dynamic([]); // Optional allowlist for data-mover hosts\n// Build baseline of known source-destination pairs.\nlet Baseline = CommonSecurityLog\n| where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))\n| extend SourceIP = tostring(SourceIP)\n| extend DestinationIP = tostring(DestinationIP)\n| summarize by SourceIP, DestinationIP;\n// Aggregate recent outbound volume.\nlet Recent = CommonSecurityLog\n| where TimeGenerated >= ago(DetectionWindow)\n| extend SourceIP = tostring(SourceIP)\n| extend DestinationIP = tostring(DestinationIP)\n| extend BytesOut = tolong(coalesce(column_ifexists(\"BytesSent\", long(null)), column_ifexists(\"SentBytes\", long(null)), column_ifexists(\"Bytes\", long(null)), 0))\n| where SourceIP !in (AllowedSources)\n| where DestinationIP !in (AllowedDestinations)\n| summarize TotalBytesOut=sum(BytesOut), SessionCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated),\n           DestPorts=make_set(DestinationPort, 10), Vendors=make_set(DeviceVendor, 5), Products=make_set(DeviceProduct, 5)\n  by SourceIP, DestinationIP, ApplicationProtocol;\nRecent\n| join kind=leftanti Baseline on SourceIP, DestinationIP\n| where TotalBytesOut >= MinBytesOut\n| project TimeGenerated=LastSeen, SourceIP, DestinationIP, ApplicationProtocol, TotalBytesOut, SessionCount, DestPorts, Vendors, Products, FirstSeen, LastSeen\n"
+    },
+    {
+      "id": "2602788b-eab7-4bd6-acb6-a9bed75bb3d4",
+      "name": "Unusual RDP/SMB Lateral Movement",
+      "description": "Detects new RDP/SMB source-to-destination host pairs for a user account.\nData sources: SecurityEvent (Windows Security Events).\nTuning: allowlist jump hosts and adjust MinLogons or baseline period.\nRecommended actions: review account activity, validate host pairing, and check for lateral movement artifacts.\n",
+      "severity": "Medium",
+      "tactics": [
+        "LateralMovement"
+      ],
+      "techniques": [
+        "T1021.001",
+        "T1021.002"
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": "0",
+      "category": "network",
+      "dataSources": [
+        "SecurityEvent (Windows Security Events)"
+      ],
+      "connectors": [
+        "SecurityEvents"
+      ],
+      "dataTypes": [
+        "SecurityEvent"
+      ],
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "Account"
+            }
+          ]
+        },
+        {
+          "entityType": "Host",
+          "fieldMappings": [
+            {
+              "identifier": "HostName",
+              "columnName": "DestHost"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "SourceIP"
+            }
+          ]
+        }
+      ],
+      "status": "Production",
+      "falsePositives": "New admin workflows; IT troubleshooting; jump host rotations",
+      "query": "let BaselinePeriod = 14d;\nlet DetectionWindow = 1h;\nlet MinLogons = 3;\nlet AllowedSources = dynamic([]); // Optional allowlist for jump hosts\nlet LogonTypes = dynamic([3, 10]); // 3=Network (SMB), 10=RemoteInteractive (RDP)\n// Baseline of known account-to-host access patterns.\nlet Baseline = SecurityEvent\n| where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))\n| where EventID == 4624\n| where LogonType in (LogonTypes)\n| extend SourceIP = tostring(IpAddress)\n| extend DestHost = tostring(Computer)\n| extend Account = strcat(tostring(TargetDomainName), \"\\\\\", tostring(TargetUserName))\n| where SourceIP !in (AllowedSources)\n| summarize by Account, SourceIP, DestHost;\n// Recent logons for comparison.\nlet Recent = SecurityEvent\n| where TimeGenerated >= ago(DetectionWindow)\n| where EventID == 4624\n| where LogonType in (LogonTypes)\n| extend SourceIP = tostring(IpAddress)\n| extend DestHost = tostring(Computer)\n| extend Account = strcat(tostring(TargetDomainName), \"\\\\\", tostring(TargetUserName))\n| where SourceIP !in (AllowedSources)\n| summarize LogonCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), LogonTypes=make_set(LogonType, 2)\n  by Account, SourceIP, DestHost;\nRecent\n| join kind=leftanti Baseline on Account, SourceIP, DestHost\n| where LogonCount >= MinLogons\n| project TimeGenerated=LastSeen, Account, SourceIP, DestHost, LogonCount, LogonTypes, FirstSeen, LastSeen\n"
+    }
+  ]
+}

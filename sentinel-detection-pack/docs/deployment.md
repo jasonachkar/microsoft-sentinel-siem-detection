@@ -16,5 +16,8 @@
 - Use the YAML bundle from `bundles/sentinel-rules-bundle.yml` to drive deployment via ARM/Bicep templates.
 - Keep parameters (schedule, thresholds, suppression) aligned with the YAML definitions.
 
+## Optional live data API (Azure Functions)
+- For a read-only API that powers the UI with live Log Analytics data, see `docs/live-data.md`.
+
 ## Minimum connectors
 See `docs/data-sources.md` for required data connectors and tables.

@@ -4,8 +4,16 @@
 *.swo
 *.tmp
 *.log
+/package-lock.json
 node_modules/
 .vscode/
 .idea/
 .env
 .env.*
+ui/node_modules/
+ui/dist/
+ui/.vercel/
+functions/**/bin/
+functions/**/obj/
+functions/**/local.settings.json
+functions/**/.vs/

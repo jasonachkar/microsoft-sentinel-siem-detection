@@ -40,6 +40,22 @@ Production-ready Microsoft Sentinel analytics rules with MITRE ATT&CK mappings, 
 - See `docs/testing.md` for safe testing guidance and sample data references.
 - See `docs/tuning.md` for allowlists, watchlists, and false positive reduction.
 
+## UI showcase (Vite + React)
+A SIEM-style console UI is available under `ui/` and is designed for Vercel hosting.
+
+Quick start:
+1. `cd ui`
+2. `npm install`
+3. `npm run dev`
+
+Vercel:
+- Root directory: `ui/`
+- Build command: `npm run build`
+- Output directory: `dist`
+
+Live data (optional):
+- Deploy the Azure Functions API in `functions/SentinelLiveApi` and set `VITE_API_BASE_URL`.
+
 ## Disclaimers
 - Use in a test workspace first.
 - Tune thresholds and allowlists per environment.
