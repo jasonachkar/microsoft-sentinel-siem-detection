@@ -1,0 +1,54 @@
+/*
+RuleId: b34be2c6-772a-43a9-ab9b-f0e16f32c3be
+Name: Entra ID Impossible Travel Sign-in
+Category: identity
+Severity: Medium
+Tactics: InitialAccess, CredentialAccess
+Techniques: T1078.004
+DataSources: SigninLogs (Microsoft Entra ID)
+QueryFrequency: PT1H
+QueryPeriod: PT24H
+TriggerOperator: GreaterThan
+TriggerThreshold: 0
+Version: 1.0.0
+Author: Jason Achkar Diab (template)
+Status: Production
+Description: Flags rapid successive logins from different locations that are unlikely for the same user.
+FalsePositives: Users on VPNs; mobile users; corporate SSO through global proxies
+*/
+
+let QueryPeriod = 24h;
+let MaxTravelTime = 2h;
+let MinSpeedKph = 900.0; // Approximate high-speed travel threshold
+let AllowedCountries = dynamic([]); // Optional allowlist for known travel hubs
+let AllowedIPs = dynamic([]); // Optional allowlist for trusted VPN IPs
+// Normalize successful sign-ins and extract geolocation fields.
+let Signins = SigninLogs
+| where TimeGenerated >= ago(QueryPeriod)
+| where ResultType == 0
+| extend Account = tostring(UserPrincipalName)
+| extend IPAddress = tostring(IPAddress)
+| extend AppDisplayName = tostring(AppDisplayName)
+| extend ClientAppUsed = tostring(ClientAppUsed)
+| extend UserAgent = tostring(UserAgent)
+| extend Country = tostring(LocationDetails.countryOrRegion)
+| extend State = tostring(LocationDetails.state)
+| extend City = tostring(LocationDetails.city)
+| extend Geo = todynamic(LocationDetails.geoCoordinates)
+| extend Latitude = todouble(Geo.latitude)
+| extend Longitude = todouble(Geo.longitude)
+| where IPAddress !in (AllowedIPs)
+| project TimeGenerated, Account, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, Country, State, City, Latitude, Longitude;
+// Compare each sign-in to the previous one for the same user.
+Signins
+| sort by Account asc, TimeGenerated asc
+| extend PrevTime = prev(TimeGenerated), PrevCountry = prev(Country), PrevCity = prev(City), PrevIP = prev(IPAddress), PrevLat = prev(Latitude), PrevLon = prev(Longitude)
+| extend TravelTime = TimeGenerated - PrevTime
+| extend DistanceMeters = geo_distance_2points(Latitude, Longitude, PrevLat, PrevLon)
+| extend DistanceKm = DistanceMeters / 1000.0
+| extend SpeedKph = iif(TravelTime > 0s and isfinite(DistanceKm), DistanceKm / (TravelTime / 1h), real(null))
+| where TravelTime <= MaxTravelTime
+| where isnotempty(PrevCountry) and Country != PrevCountry
+| where isnull(SpeedKph) or SpeedKph >= MinSpeedKph
+| where (isempty(AllowedCountries) or Country !in (AllowedCountries) or PrevCountry !in (AllowedCountries))
+| project TimeGenerated, Account, IPAddress, PrevIP, Country, PrevCountry, City, PrevCity, AppDisplayName, ClientAppUsed, UserAgent, TravelTime, DistanceKm, SpeedKph

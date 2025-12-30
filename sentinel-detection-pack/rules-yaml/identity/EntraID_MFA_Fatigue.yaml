@@ -1,0 +1,59 @@
+id: 35bde42b-3434-4674-bc4a-42e95a1fe772
+name: Entra ID MFA Fatigue
+description: |
+  Detects repeated MFA denial/timeout outcomes for the same account and IP.
+  Data sources: SigninLogs (Microsoft Entra ID).
+  Tuning: adjust MinMfaDenials and allowlist trusted IPs or expected MFA-heavy apps.
+  Recommended actions: contact the user, verify recent sign-ins, and review MFA device registrations.
+severity: Medium
+status: Production
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - SigninLogs
+queryFrequency: PT5M
+queryPeriod: PT30M
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+techniques:
+  - T1621
+query: |
+  let QueryPeriod = 30m;
+  let BinSize = 10m;
+  let MinMfaDenials = 3;
+  let AllowedIPs = dynamic([]); // Add trusted VPN/office IPs if needed
+  let AllowedApps = dynamic([]); // Optional allowlist for expected MFA-heavy apps
+  // Expand authentication steps to isolate MFA denial/timeout outcomes.
+  SigninLogs
+  | where TimeGenerated >= ago(QueryPeriod)
+  | where isnotempty(AuthenticationDetails)
+  | extend Account = tostring(UserPrincipalName)
+  | extend IPAddress = tostring(IPAddress)
+  | extend AppDisplayName = tostring(AppDisplayName)
+  | extend ClientAppUsed = tostring(ClientAppUsed)
+  | extend UserAgent = tostring(UserAgent)
+  | where IPAddress !in (AllowedIPs)
+  | where isempty(AllowedApps) or AppDisplayName !in (AllowedApps)
+  | extend AuthDetails = todynamic(AuthenticationDetails)
+  | mv-expand AuthDetails
+  | extend AuthMethod = tostring(AuthDetails.authenticationMethod)
+  | extend AuthStepResult = tostring(AuthDetails.authenticationStepResultDetail)
+  | where AuthStepResult has_any ("MFA", "multi-factor")
+  | where AuthStepResult has_any ("denied", "reject", "declined", "timeout", "fail")
+  | summarize MfaPromptCount=count(), Apps=make_set(AppDisplayName, 5), ResultDetails=make_set(AuthStepResult, 5)
+    by bin(TimeGenerated, BinSize), Account, IPAddress, ClientAppUsed, UserAgent
+  | where MfaPromptCount >= MinMfaDenials
+  | project TimeGenerated, Account, IPAddress, ClientAppUsed, UserAgent, MfaPromptCount, Apps, ResultDetails
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Account
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPAddress
+kind: Scheduled
+version: 1.0.0

@@ -1,0 +1,55 @@
+id: db69f50b-3f00-46cd-9f47-8ad0bc780209
+name: Entra ID Risky Sign-in from TOR or Watchlist
+description: |
+  Detects risky sign-ins based on Entra risk signals or optional TOR/high-risk IP watchlists.
+  Data sources: SigninLogs (Microsoft Entra ID).
+  Tuning: populate RiskyIPs or configure a watchlist; allowlist trusted VPN egress.
+  Recommended actions: verify user legitimacy, inspect device posture, and enforce conditional access.
+severity: High
+status: Production
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - SigninLogs
+queryFrequency: PT5M
+queryPeriod: PT1H
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+  - CommandAndControl
+techniques:
+  - T1090.003
+  - T1078.004
+query: |
+  let QueryPeriod = 1h;
+  let RiskLevels = dynamic(["high", "medium"]);
+  let AllowedIPs = dynamic([]); // Add trusted VPN/office IPs here
+  let RiskyIPs = dynamic([]); // Optional: populate from a watchlist of TOR/high-risk IPs
+  // Tip: replace RiskyIPs with a watchlist query if available in your workspace.
+  // let RiskyIPs = (_GetWatchlist("HighRiskIPs") | project IPAddress=tostring(SearchKey));
+  SigninLogs
+  | where TimeGenerated >= ago(QueryPeriod)
+  | extend Account = tostring(UserPrincipalName)
+  | extend IPAddress = tostring(IPAddress)
+  | extend AppDisplayName = tostring(AppDisplayName)
+  | extend ClientAppUsed = tostring(ClientAppUsed)
+  | extend UserAgent = tostring(UserAgent)
+  | extend RiskLevel = tostring(RiskLevelDuringSignIn)
+  | extend RiskState = tostring(RiskState)
+  | extend RiskDetail = tostring(RiskDetail)
+  | where IPAddress !in (AllowedIPs)
+  | where RiskLevel in~ (RiskLevels) or IPAddress in (RiskyIPs)
+  | extend IsWatchlistMatch = IPAddress in (RiskyIPs)
+  | project TimeGenerated, Account, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, RiskLevel, RiskState, RiskDetail, IsWatchlistMatch
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Account
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPAddress
+kind: Scheduled
+version: 1.0.0

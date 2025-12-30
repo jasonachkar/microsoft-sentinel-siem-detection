@@ -1,0 +1,46 @@
+/*
+RuleId: 508a9f98-7817-4bb0-bf98-e966c3b14bea
+Name: Phishing Attachment Patterns
+Category: email
+Severity: Medium
+Tactics: InitialAccess
+Techniques: T1566.001
+DataSources: EmailEvents, EmailAttachmentInfo (Microsoft 365 Defender)
+QueryFrequency: PT5M
+QueryPeriod: PT1H
+TriggerOperator: GreaterThan
+TriggerThreshold: 0
+Version: 1.0.0
+Author: Jason Achkar Diab (template)
+Status: Production
+Description: Detects inbound email with suspicious attachment types from external senders.
+FalsePositives: Legitimate partner attachments; internal security testing; bulk mail with archives
+*/
+
+let QueryPeriod = 1h;
+let BinSize = 15m;
+let SuspiciousExtensions = dynamic(["docm", "xlsm", "js", "vbs", "lnk", "iso", "img", "rar", "zip", "7z", "exe", "dll"]);
+let AllowedSenderDomains = dynamic([]); // Add trusted partner domains
+let AllowedSenderAddresses = dynamic([]); // Add approved external senders
+// Normalize inbound email events.
+let Emails = EmailEvents
+| where TimeGenerated >= ago(QueryPeriod)
+| where EmailDirection == "Inbound"
+| extend SenderAddress = tostring(SenderFromAddress)
+| extend SenderDomain = tostring(SenderFromDomain)
+| where SenderDomain !in (AllowedSenderDomains)
+| where SenderAddress !in (AllowedSenderAddresses)
+| project TimeGenerated, NetworkMessageId, SenderAddress, SenderDomain, RecipientEmailAddress, Subject;
+// Normalize attachment metadata and flag suspicious extensions.
+let Attachments = EmailAttachmentInfo
+| where TimeGenerated >= ago(QueryPeriod)
+| extend AttachmentExt = tolower(AttachmentFileExtension)
+| where AttachmentExt in (SuspiciousExtensions)
+| project NetworkMessageId, AttachmentName, AttachmentExt, AttachmentSize;
+Emails
+| join kind=inner Attachments on NetworkMessageId
+| summarize SuspiciousAttachmentCount=count(), AttachmentNames=make_set(AttachmentName, 10), Recipients=make_set(RecipientEmailAddress, 10)
+  by bin(TimeGenerated, BinSize), SenderAddress, SenderDomain, Subject, NetworkMessageId
+| where SuspiciousAttachmentCount >= 1
+| extend PrimaryRecipient = tostring(Recipients[0])
+| project TimeGenerated, SenderAddress, SenderDomain, Subject, NetworkMessageId, SuspiciousAttachmentCount, AttachmentNames, Recipients, PrimaryRecipient

@@ -1,0 +1,78 @@
+id: dba8a2af-a17b-43fb-b5b7-09b2e659dd3a
+name: Rare Admin Operations (Entra ID + Azure Activity)
+description: |
+  Identifies high-impact admin operations that are rare for the initiating actor.
+  Data sources: AuditLogs (Microsoft Entra ID), AzureActivity.
+  Tuning: adjust MaxHistoricalCount and tailor the high-impact operation lists.
+  Recommended actions: validate change control, confirm actor legitimacy, and review affected resources.
+severity: Medium
+status: Production
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - AuditLogs
+  - connectorId: AzureActivity
+    dataTypes:
+      - AzureActivity
+queryFrequency: PT1H
+queryPeriod: PT1D
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - DefenseEvasion
+techniques:
+  - T1562
+query: |
+  let BaselinePeriod = 30d;
+  let DetectionWindow = 1d;
+  let MaxHistoricalCount = 1;
+  // High-impact Entra ID operations (conditional access, security defaults, authentication policy).
+  let AadOps = AuditLogs
+  | where TimeGenerated >= ago(BaselinePeriod)
+  | where OperationName has_any ("Conditional Access", "security defaults", "authentication methods", "Update policy", "Delete policy")
+  | extend OperationSource = "EntraID"
+  | extend Actor = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName), "Unknown")
+  | extend TargetResource = tostring(TargetResources[0].displayName)
+  | extend Operation = tostring(OperationName)
+  | project TimeGenerated, OperationSource, Operation, Actor, TargetResource, Result;
+  // High-impact Azure resource operations.
+  let AzureOps = AzureActivity
+  | where TimeGenerated >= ago(BaselinePeriod)
+  | where OperationNameValue in~ (
+      "Microsoft.Authorization/policyAssignments/delete",
+      "Microsoft.Authorization/policyAssignments/write",
+      "Microsoft.Authorization/roleAssignments/delete",
+      "Microsoft.Authorization/roleAssignments/write",
+      "Microsoft.Security/pricings/write",
+      "Microsoft.Insights/diagnosticSettings/delete",
+      "Microsoft.Insights/diagnosticSettings/write",
+      "Microsoft.Network/networkSecurityGroups/securityRules/delete",
+      "Microsoft.KeyVault/vaults/accessPolicies/write"
+    )
+  | extend OperationSource = "AzureActivity"
+  | extend Actor = tostring(Caller)
+  | extend TargetResource = tostring(ResourceId)
+  | extend Operation = tostring(OperationNameValue)
+  | project TimeGenerated, OperationSource, Operation, Actor, TargetResource, Result=ActivityStatusValue;
+  // Combine and baseline.
+  let AllOps = union isfuzzy=true AadOps, AzureOps;
+  let Baseline = AllOps
+  | where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))
+  | summarize HistoricalCount=count() by Actor, OperationSource, Operation;
+  let Recent = AllOps
+  | where TimeGenerated >= ago(DetectionWindow)
+  | summarize RecentCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), Targets=make_set(TargetResource, 5)
+    by Actor, OperationSource, Operation;
+  Recent
+  | join kind=leftouter Baseline on Actor, OperationSource, Operation
+  | extend HistoricalCount = coalesce(HistoricalCount, 0)
+  | where HistoricalCount <= MaxHistoricalCount
+  | extend Account = Actor
+  | project TimeGenerated=LastSeen, Account, Actor, OperationSource, Operation, HistoricalCount, RecentCount, Targets, FirstSeen, LastSeen
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Actor
+kind: Scheduled
+version: 1.0.0

@@ -1,0 +1,59 @@
+id: 49207dbc-e316-4b48-94d6-68d6c2014d18
+name: Entra ID Privileged Role Assignment
+description: |
+  Detects assignments to high-privilege Entra ID roles.
+  Data sources: AuditLogs (Microsoft Entra ID).
+  Tuning: allowlist known break-glass or automation accounts and expected role changes.
+  Recommended actions: validate change request, review initiating principal, and verify MFA and conditional access.
+severity: High
+status: Production
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - AuditLogs
+queryFrequency: PT5M
+queryPeriod: PT1H
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - Persistence
+  - PrivilegeEscalation
+techniques:
+  - T1098.003
+query: |
+  let QueryPeriod = 1h;
+  let PrivilegedRoles = dynamic([
+    "Global Administrator",
+    "Privileged Role Administrator",
+    "Security Administrator",
+    "Conditional Access Administrator",
+    "Exchange Administrator",
+    "SharePoint Administrator",
+    "User Administrator",
+    "Application Administrator",
+    "Cloud Application Administrator"
+  ]);
+  let AllowedInitiators = dynamic([]); // Optional allowlist for break-glass or service accounts
+  AuditLogs
+  | where TimeGenerated >= ago(QueryPeriod)
+  | where OperationName in ("Add member to role", "Add eligible member to role", "Add member to directory role")
+  | extend Initiator = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName), "Unknown")
+  | where Initiator !in (AllowedInitiators)
+  // Expand target resources to identify assigned roles and target accounts.
+  | mv-expand TargetResources
+  | extend TargetType = tostring(TargetResources.type)
+  | extend TargetDisplayName = tostring(TargetResources.displayName)
+  | summarize RoleNames=make_set_if(TargetDisplayName, TargetType in ("Role", "DirectoryRole"), 10),
+             TargetAccounts=make_set_if(TargetDisplayName, TargetType in ("User", "ServicePrincipal"), 10)
+    by TimeGenerated, Initiator, OperationName, Result
+  | mv-expand RoleName = RoleNames
+  | where RoleName in~ (PrivilegedRoles)
+  | extend Account = Initiator
+  | project TimeGenerated, Account, Initiator, RoleName, TargetAccounts, OperationName, Result
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Initiator
+kind: Scheduled
+version: 1.0.0

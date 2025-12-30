@@ -1,0 +1,39 @@
+/*
+RuleId: db69f50b-3f00-46cd-9f47-8ad0bc780209
+Name: Entra ID Risky Sign-in from TOR or Watchlist
+Category: identity
+Severity: High
+Tactics: InitialAccess, CommandAndControl
+Techniques: T1090.003, T1078.004
+DataSources: SigninLogs (Microsoft Entra ID)
+QueryFrequency: PT5M
+QueryPeriod: PT1H
+TriggerOperator: GreaterThan
+TriggerThreshold: 0
+Version: 1.0.0
+Author: Jason Achkar Diab (template)
+Status: Production
+Description: Detects risky sign-ins based on Entra risk signals or optional risky IP watchlist matches.
+FalsePositives: Legitimate travel; corporate proxies flagged as risky; third-party MFA testing
+*/
+
+let QueryPeriod = 1h;
+let RiskLevels = dynamic(["high", "medium"]);
+let AllowedIPs = dynamic([]); // Add trusted VPN/office IPs here
+let RiskyIPs = dynamic([]); // Optional: populate from a watchlist of TOR/high-risk IPs
+// Tip: replace RiskyIPs with a watchlist query if available in your workspace.
+// let RiskyIPs = (_GetWatchlist("HighRiskIPs") | project IPAddress=tostring(SearchKey));
+SigninLogs
+| where TimeGenerated >= ago(QueryPeriod)
+| extend Account = tostring(UserPrincipalName)
+| extend IPAddress = tostring(IPAddress)
+| extend AppDisplayName = tostring(AppDisplayName)
+| extend ClientAppUsed = tostring(ClientAppUsed)
+| extend UserAgent = tostring(UserAgent)
+| extend RiskLevel = tostring(RiskLevelDuringSignIn)
+| extend RiskState = tostring(RiskState)
+| extend RiskDetail = tostring(RiskDetail)
+| where IPAddress !in (AllowedIPs)
+| where RiskLevel in~ (RiskLevels) or IPAddress in (RiskyIPs)
+| extend IsWatchlistMatch = IPAddress in (RiskyIPs)
+| project TimeGenerated, Account, IPAddress, AppDisplayName, ClientAppUsed, UserAgent, RiskLevel, RiskState, RiskDetail, IsWatchlistMatch

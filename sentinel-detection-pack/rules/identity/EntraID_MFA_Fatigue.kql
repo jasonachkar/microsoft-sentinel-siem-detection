@@ -1,0 +1,45 @@
+/*
+RuleId: 35bde42b-3434-4674-bc4a-42e95a1fe772
+Name: Entra ID MFA Fatigue
+Category: identity
+Severity: Medium
+Tactics: CredentialAccess
+Techniques: T1621
+DataSources: SigninLogs (Microsoft Entra ID)
+QueryFrequency: PT5M
+QueryPeriod: PT30M
+TriggerOperator: GreaterThan
+TriggerThreshold: 0
+Version: 1.0.0
+Author: Jason Achkar Diab (template)
+Status: Production
+Description: Detects repeated MFA denials/timeouts for the same account and IP in a short window.
+FalsePositives: Users repeatedly mistyping codes; MFA outages; legitimate travel with poor connectivity
+*/
+
+let QueryPeriod = 30m;
+let BinSize = 10m;
+let MinMfaDenials = 3;
+let AllowedIPs = dynamic([]); // Add trusted VPN/office IPs if needed
+let AllowedApps = dynamic([]); // Optional allowlist for expected MFA-heavy apps
+// Expand authentication steps to isolate MFA denial/timeout outcomes.
+SigninLogs
+| where TimeGenerated >= ago(QueryPeriod)
+| where isnotempty(AuthenticationDetails)
+| extend Account = tostring(UserPrincipalName)
+| extend IPAddress = tostring(IPAddress)
+| extend AppDisplayName = tostring(AppDisplayName)
+| extend ClientAppUsed = tostring(ClientAppUsed)
+| extend UserAgent = tostring(UserAgent)
+| where IPAddress !in (AllowedIPs)
+| where isempty(AllowedApps) or AppDisplayName !in (AllowedApps)
+| extend AuthDetails = todynamic(AuthenticationDetails)
+| mv-expand AuthDetails
+| extend AuthMethod = tostring(AuthDetails.authenticationMethod)
+| extend AuthStepResult = tostring(AuthDetails.authenticationStepResultDetail)
+| where AuthStepResult has_any ("MFA", "multi-factor")
+| where AuthStepResult has_any ("denied", "reject", "declined", "timeout", "fail")
+| summarize MfaPromptCount=count(), Apps=make_set(AppDisplayName, 5), ResultDetails=make_set(AuthStepResult, 5)
+  by bin(TimeGenerated, BinSize), Account, IPAddress, ClientAppUsed, UserAgent
+| where MfaPromptCount >= MinMfaDenials
+| project TimeGenerated, Account, IPAddress, ClientAppUsed, UserAgent, MfaPromptCount, Apps, ResultDetails

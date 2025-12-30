@@ -1,0 +1,55 @@
+id: 5aef5e7e-359b-4890-bb93-4c892b0cac40
+name: Suspicious PowerShell Encoded Command
+description: |
+  Detects PowerShell executions with encoded commands or download cradle patterns.
+  Data sources: DeviceProcessEvents (Microsoft Defender for Endpoint).
+  Tuning: adjust MinInstances and allowlist known automation parents or signed scripts.
+  Recommended actions: inspect command line, confirm script origin, and isolate host if unauthorized.
+severity: High
+status: Production
+requiredDataConnectors:
+  - connectorId: MicrosoftThreatProtection
+    dataTypes:
+      - DeviceProcessEvents
+queryFrequency: PT5M
+queryPeriod: PT1H
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - Execution
+  - CommandAndControl
+techniques:
+  - T1059.001
+  - T1105
+query: |
+  let QueryPeriod = 1h;
+  let MinInstances = 2;
+  let SuspiciousFlags = dynamic(["-enc", "-encodedcommand", "-e ", "-nop", "-noni", "-w hidden", "-windowstyle hidden"]);
+  let DownloadCradles = dynamic(["IEX", "Invoke-Expression", "DownloadString", "FromBase64String", "Invoke-WebRequest", "iwr", "curl", "wget", "bitsadmin", "WebClient"]);
+  let AllowedParents = dynamic(["explorer.exe", "powershell_ise.exe"]); // Optional allowlist for known benign parents
+  DeviceProcessEvents
+  | where TimeGenerated >= ago(QueryPeriod)
+  | where ActionType == "ProcessCreated"
+  | where FileName in~ ("powershell.exe", "pwsh.exe")
+  | extend CommandLine = tostring(ProcessCommandLine)
+  | extend ParentProcess = tostring(InitiatingProcessFileName)
+  | extend Account = coalesce(tostring(InitiatingProcessAccountName), tostring(AccountName))
+  | extend DeviceName = tostring(DeviceName)
+  // Flag encoded or download cradle usage.
+  | where CommandLine has_any (SuspiciousFlags) or CommandLine has_any (DownloadCradles)
+  | where isempty(AllowedParents) or ParentProcess !in~ (AllowedParents)
+  | summarize Instances=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), CommandSamples=make_set(CommandLine, 5)
+    by Account, DeviceName, ParentProcess, FileName
+  | where Instances >= MinInstances
+  | project TimeGenerated=LastSeen, Account, DeviceName, ParentProcess, FileName, Instances, CommandSamples
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Account
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+kind: Scheduled
+version: 1.0.0

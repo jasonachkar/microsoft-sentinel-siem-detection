@@ -1,0 +1,68 @@
+id: 2602788b-eab7-4bd6-acb6-a9bed75bb3d4
+name: Unusual RDP/SMB Lateral Movement
+description: |
+  Detects new RDP/SMB source-to-destination host pairs for a user account.
+  Data sources: SecurityEvent (Windows Security Events).
+  Tuning: allowlist jump hosts and adjust MinLogons or baseline period.
+  Recommended actions: review account activity, validate host pairing, and check for lateral movement artifacts.
+severity: Medium
+status: Production
+requiredDataConnectors:
+  - connectorId: SecurityEvents
+    dataTypes:
+      - SecurityEvent
+queryFrequency: PT5M
+queryPeriod: PT1H
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - LateralMovement
+techniques:
+  - T1021.001
+  - T1021.002
+query: |
+  let BaselinePeriod = 14d;
+  let DetectionWindow = 1h;
+  let MinLogons = 3;
+  let AllowedSources = dynamic([]); // Optional allowlist for jump hosts
+  let LogonTypes = dynamic([3, 10]); // 3=Network (SMB), 10=RemoteInteractive (RDP)
+  // Baseline of known account-to-host access patterns.
+  let Baseline = SecurityEvent
+  | where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))
+  | where EventID == 4624
+  | where LogonType in (LogonTypes)
+  | extend SourceIP = tostring(IpAddress)
+  | extend DestHost = tostring(Computer)
+  | extend Account = strcat(tostring(TargetDomainName), "\\", tostring(TargetUserName))
+  | where SourceIP !in (AllowedSources)
+  | summarize by Account, SourceIP, DestHost;
+  // Recent logons for comparison.
+  let Recent = SecurityEvent
+  | where TimeGenerated >= ago(DetectionWindow)
+  | where EventID == 4624
+  | where LogonType in (LogonTypes)
+  | extend SourceIP = tostring(IpAddress)
+  | extend DestHost = tostring(Computer)
+  | extend Account = strcat(tostring(TargetDomainName), "\\", tostring(TargetUserName))
+  | where SourceIP !in (AllowedSources)
+  | summarize LogonCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), LogonTypes=make_set(LogonType, 2)
+    by Account, SourceIP, DestHost;
+  Recent
+  | join kind=leftanti Baseline on Account, SourceIP, DestHost
+  | where LogonCount >= MinLogons
+  | project TimeGenerated=LastSeen, Account, SourceIP, DestHost, LogonCount, LogonTypes, FirstSeen, LastSeen
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Account
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DestHost
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+kind: Scheduled
+version: 1.0.0

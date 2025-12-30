@@ -1,0 +1,61 @@
+id: 508a9f98-7817-4bb0-bf98-e966c3b14bea
+name: Phishing Attachment Patterns
+description: |
+  Detects inbound email with suspicious attachment types from external senders.
+  Data sources: EmailEvents, EmailAttachmentInfo (Microsoft 365 Defender).
+  Tuning: allowlist trusted partner domains and benign attachment extensions.
+  Recommended actions: quarantine the message, analyze the attachment, and notify impacted recipients.
+severity: Medium
+status: Production
+requiredDataConnectors:
+  - connectorId: MicrosoftThreatProtection
+    dataTypes:
+      - EmailEvents
+      - EmailAttachmentInfo
+queryFrequency: PT5M
+queryPeriod: PT1H
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+techniques:
+  - T1566.001
+query: |
+  let QueryPeriod = 1h;
+  let BinSize = 15m;
+  let SuspiciousExtensions = dynamic(["docm", "xlsm", "js", "vbs", "lnk", "iso", "img", "rar", "zip", "7z", "exe", "dll"]);
+  let AllowedSenderDomains = dynamic([]); // Add trusted partner domains
+  let AllowedSenderAddresses = dynamic([]); // Add approved external senders
+  // Normalize inbound email events.
+  let Emails = EmailEvents
+  | where TimeGenerated >= ago(QueryPeriod)
+  | where EmailDirection == "Inbound"
+  | extend SenderAddress = tostring(SenderFromAddress)
+  | extend SenderDomain = tostring(SenderFromDomain)
+  | where SenderDomain !in (AllowedSenderDomains)
+  | where SenderAddress !in (AllowedSenderAddresses)
+  | project TimeGenerated, NetworkMessageId, SenderAddress, SenderDomain, RecipientEmailAddress, Subject;
+  // Normalize attachment metadata and flag suspicious extensions.
+  let Attachments = EmailAttachmentInfo
+  | where TimeGenerated >= ago(QueryPeriod)
+  | extend AttachmentExt = tolower(AttachmentFileExtension)
+  | where AttachmentExt in (SuspiciousExtensions)
+  | project NetworkMessageId, AttachmentName, AttachmentExt, AttachmentSize;
+  Emails
+  | join kind=inner Attachments on NetworkMessageId
+  | summarize SuspiciousAttachmentCount=count(), AttachmentNames=make_set(AttachmentName, 10), Recipients=make_set(RecipientEmailAddress, 10)
+    by bin(TimeGenerated, BinSize), SenderAddress, SenderDomain, Subject, NetworkMessageId
+  | where SuspiciousAttachmentCount >= 1
+  | extend PrimaryRecipient = tostring(Recipients[0])
+  | project TimeGenerated, SenderAddress, SenderDomain, Subject, NetworkMessageId, SuspiciousAttachmentCount, AttachmentNames, Recipients, PrimaryRecipient
+entityMappings:
+  - entityType: Mailbox
+    fieldMappings:
+      - identifier: MailboxPrimaryAddress
+        columnName: PrimaryRecipient
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: SenderAddress
+kind: Scheduled
+version: 1.0.0

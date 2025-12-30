@@ -1,0 +1,54 @@
+id: d0fa0869-a23c-4a16-a154-80123250b257
+name: Suspicious Inbox Rule External Forward
+description: |
+  Detects inbox rules that forward or redirect email to external domains.
+  Data sources: OfficeActivity (Office 365).
+  Tuning: allowlist trusted domains and approved mailboxes.
+  Recommended actions: validate rule ownership, remove unauthorized rules, and reset compromised credentials.
+severity: High
+status: Production
+requiredDataConnectors:
+  - connectorId: Office365
+    dataTypes:
+      - OfficeActivity
+queryFrequency: PT5M
+queryPeriod: PT1H
+triggerOperator: GreaterThan
+triggerThreshold: 0
+tactics:
+  - Collection
+techniques:
+  - T1114.003
+query: |
+  let QueryPeriod = 1h;
+  let BinSize = 15m;
+  let AllowedDomains = dynamic([]); // Add trusted external domains
+  let AllowedUsers = dynamic([]); // Optional allowlist for approved mailboxes
+  OfficeActivity
+  | where TimeGenerated >= ago(QueryPeriod)
+  | where Operation in ("New-InboxRule", "Set-InboxRule", "UpdateInboxRules")
+  | extend Account = tostring(UserId)
+  | extend ClientIP = tostring(ClientIP)
+  | where isempty(AllowedUsers) or Account !in (AllowedUsers)
+  | extend Parameters = todynamic(Parameters)
+  | mv-expand Parameters
+  | extend ParamName = tostring(Parameters.Name), ParamValue = tostring(Parameters.Value)
+  | where ParamName in ("ForwardTo", "RedirectTo", "ForwardingSmtpAddress", "RecipientAddress")
+  | extend ForwardAddress = tostring(ParamValue)
+  | extend ForwardDomain = tolower(extract(@"@([^;>]+)$", 1, ForwardAddress))
+  | where isnotempty(ForwardDomain)
+  | where ForwardDomain !in (AllowedDomains)
+  | summarize ForwardCount=count(), ForwardAddresses=make_set(ForwardAddress, 10), ForwardDomains=make_set(ForwardDomain, 10)
+    by bin(TimeGenerated, BinSize), Account, ClientIP, Operation, MailboxOwnerUPN
+  | project TimeGenerated, Account, ClientIP, Operation, MailboxOwnerUPN, ForwardCount, ForwardAddresses, ForwardDomains
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Account
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: ClientIP
+kind: Scheduled
+version: 1.0.0

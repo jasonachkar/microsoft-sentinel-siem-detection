@@ -1,0 +1,56 @@
+/*
+RuleId: f32a9c55-5856-43ca-88b3-47996df8898a
+Name: Local Admin Group Changes
+Category: endpoint
+Severity: Medium
+Tactics: PrivilegeEscalation, Persistence
+Techniques: T1098
+DataSources: SecurityEvent (Windows Security Events)
+QueryFrequency: PT5M
+QueryPeriod: PT1H
+TriggerOperator: GreaterThan
+TriggerThreshold: 0
+Version: 1.0.0
+Author: Jason Achkar Diab (template)
+Status: Production
+Description: Detects local account creation followed by Administrators group membership changes.
+FalsePositives: Authorized IT admin actions; domain join workflows; endpoint build pipelines
+*/
+
+let QueryPeriod = 1h;
+let AdminGroupName = "Administrators";
+let AllowedInitiators = dynamic([]); // Optional allowlist for admin operators
+// Detect new local user creation.
+let NewUsers = SecurityEvent
+| where TimeGenerated >= ago(QueryPeriod)
+| where EventID == 4720
+| extend Computer = tostring(Computer)
+| extend MemberAccount = tostring(TargetUserName)
+| extend AccountDomain = tostring(TargetDomainName)
+| extend Initiator = strcat(tostring(SubjectDomainName), "\\", tostring(SubjectUserName))
+| project NewUserTime=TimeGenerated, Computer, MemberAccount, AccountDomain, Initiator;
+// Detect additions to the local Administrators group.
+let AdminAdds = SecurityEvent
+| where TimeGenerated >= ago(QueryPeriod)
+| where EventID == 4732
+| extend Computer = tostring(Computer)
+| extend GroupName = tostring(TargetUserName)
+| where GroupName =~ AdminGroupName
+| extend MemberName = tostring(MemberName)
+| extend MemberAccount = tostring(split(MemberName, "\\")[-1])
+| extend Initiator = strcat(tostring(SubjectDomainName), "\\", tostring(SubjectUserName))
+| where Initiator !in (AllowedInitiators)
+| project AdminAddTime=TimeGenerated, Computer, GroupName, MemberName, MemberAccount, Initiator;
+// Correlate new user creation with admin group addition.
+let NewLocalAdmins = AdminAdds
+| join kind=inner (NewUsers) on Computer, MemberAccount
+| where AdminAddTime between (NewUserTime .. NewUserTime + 1h)
+| extend ChangeType = "NewLocalAdmin"
+| project TimeGenerated=AdminAddTime, Account=Initiator, Computer, MemberName, GroupName, ChangeType, NewUserTime;
+// Capture other admin group additions not tied to new local users.
+let ExistingAdminAdds = AdminAdds
+| join kind=leftanti (NewLocalAdmins | project Computer, MemberAccount, AdminAddTime) on Computer, MemberAccount, AdminAddTime
+| extend ChangeType = "AdminGroupAdd"
+| project TimeGenerated=AdminAddTime, Account=Initiator, Computer, MemberName, GroupName, ChangeType, NewUserTime=real(null);
+union NewLocalAdmins, ExistingAdminAdds
+| project TimeGenerated, Account, Computer, MemberName, GroupName, ChangeType, NewUserTime
