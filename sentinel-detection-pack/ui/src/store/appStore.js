@@ -65,6 +65,12 @@ export const useAppStore = create((set, get) => ({
       // Selected entities for investigation
       selectedIncident: null,
       setSelectedIncident: (incident) => set({ selectedIncident: incident }),
+      selectedEntities: [],
+      setSelectedEntities: (entities) => set({ selectedEntities: entities }),
+      addSelectedEntity: (entity) => set((state) => ({
+        selectedEntities: [...state.selectedEntities.filter(e => e.id !== entity.id), entity]
+      })),
+      clearSelectedEntities: () => set({ selectedEntities: [] }),
       
       // Tutorial mode
       tutorialMode: null,

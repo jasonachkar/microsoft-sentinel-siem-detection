@@ -11,23 +11,51 @@
 
 ## ✨ Features
 
-### 🎯 Interactive Attack Simulator
-Run realistic attack scenarios and watch detection rules fire in real-time:
-- **12 Attack Scenarios** - Password spray, MFA fatigue, lateral movement, data exfiltration, and more
-- **Live Event Stream** - See security events generated as attacks progress
-- **Incident Generation** - Automatically creates incidents with full context
+### ⚡ Enhanced Attack Simulator (NEW!)
+Run realistic attack scenarios with **live script visualization**:
+- **12 Attack Scenarios** - Password spray, MFA fatigue, LSASS dump, and more
+- **🔴 Live Script Execution** - Watch PowerShell, Python, and Bash scripts run in real-time
+- **Terminal-Style Output** - See exact commands and their output as attacks progress
+- **IOC Extraction** - Automatic extraction of IPs, hashes, and techniques with copy buttons
+- **Remediation Steps** - Actionable response guidance for each attack phase
 
-### 🗺️ Global Threat Map
-Real-time visualization of attack origins and threat intelligence:
-- **Geographic Attack Visualization** - Animated attack flows from source to target
-- **Threat Intelligence Feeds** - Malicious IPs, C2 servers, phishing domains
-- **Attack Trend Analysis** - Volume and type breakdowns
+### 🗺️ Global Threat Map with LIVE DATA
+Real-time visualization using **real threat intelligence APIs**:
+- **FeodoTracker C2 Servers** - Live botnet C2 infrastructure data
+- **URLhaus Malicious URLs** - Active malware distribution URLs
+- **Geographic Attack Visualization** - Animated attack flows on world map
+- **Attack Trend Analysis** - Ransomware, phishing, BEC volume statistics
 
-### 🎯 MITRE ATT&CK Navigator
-Interactive matrix showing detection coverage:
-- **Tactic/Technique Coverage** - Visual heatmap of what's detected
-- **Gap Analysis** - Identify blind spots in detection coverage
-- **Rule Mapping** - Click any technique to see covering rules
+### 📋 SOC Kanban Incidents Board (NEW!)
+Modern incident management with drag-and-drop workflow:
+- **Kanban Columns** - New → Triage → Investigating → Contained → Resolved
+- **Drag-and-Drop** - Move incidents between status columns
+- **SLA Timers** - Visual countdown with breach warnings
+- **Analyst Assignment** - Assign incidents to team members
+- **Quick Filters** - Filter by severity, status, or assignee
+
+### 🎯 MITRE ATT&CK Navigator with Threat Actors (ENHANCED!)
+Interactive matrix with **threat actor tracking**:
+- **6 APT Groups Tracked** - APT29, APT28, Lazarus, Dragonfly, APT32, menuPass
+- **Technique Highlighting** - See which techniques each actor uses
+- **Detection Coverage** - Visual coverage percentage per tactic
+- **Gap Analysis** - Identify uncovered techniques used by tracked actors
+
+### 📊 Detection Rules with Effectiveness Metrics (ENHANCED!)
+Rule catalog with **tuning intelligence**:
+- **True/False Positive Rates** - Detection quality metrics
+- **Alert Volume Trends** - 7-day and 30-day statistics
+- **Tuning Score** - 0-100 health score for each rule
+- **Version History** - Track rule changes over time
+- **Tuning Recommendations** - Guidance for optimization
+
+### 🔍 Investigation Workbench with OSINT (ENHANCED!)
+Full investigation platform with **live lookups**:
+- **OSINT Lookup Panel** - IP, domain, and hash reputation checks
+- **Entity Relationship Graph** - ReactFlow-powered interactive visualization
+- **Evidence Collection** - Add notes, tags, and IOCs to investigations
+- **Timeline View** - Chronological event sequence
+- **Export Capabilities** - Generate investigation reports
 
 ### 📊 Security Metrics Dashboard
 Executive-level analytics and operational insights:
@@ -35,13 +63,6 @@ Executive-level analytics and operational insights:
 - **Alert Volume Trends** - Historical analysis by severity
 - **False Positive Rates** - Detection quality metrics
 - **Coverage Score** - Overall security posture
-
-### 🔍 Incident Investigation
-Full investigation workbench with entity graphs:
-- **Entity Relationship Graph** - Visual connections between users, IPs, devices
-- **Investigation Timeline** - Chronological event sequence
-- **Evidence Collection** - Aggregated supporting data
-- **Recommended Actions** - AI-suggested remediation steps
 
 ### 💾 KQL Playground
 Write and test Kusto Query Language queries:

@@ -1,131 +1,140 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Target, Shield, ChevronRight, ExternalLink, Search,
-  Filter, Download, Eye, AlertTriangle, CheckCircle
+  Target, Shield, AlertTriangle, Users, Globe,
+  ChevronRight, Search, Eye, Zap, Info, X,
+  CheckCircle, XCircle, Map as MapIcon, Clock
 } from 'lucide-react';
-import { MITRE_TACTICS, MITRE_TECHNIQUES } from '../services/threatIntelService';
 import { cn, getSeverityBadge } from '../services/utils';
+import { MITRE_TACTICS, MITRE_TECHNIQUES, THREAT_ACTORS } from '../services/threatIntelService';
 import rulesData from '../data/rules.json';
 
-// Technique Card Component
-function TechniqueCard({ technique, techniqueId, rules, isSelected, onSelect }) {
-  const coveredRules = rules.filter(r => 
-    (r.techniques || []).some(t => t === techniqueId || t.startsWith(techniqueId + '.'))
-  );
-  const isCovered = coveredRules.length > 0;
-  const highSeverityCount = coveredRules.filter(r => 
-    r.severity === 'High' || r.severity === 'Critical'
-  ).length;
+// Build technique to rules mapping
+const buildTechniqueRulesMap = () => {
+  const map = {};
+  (rulesData.rules || []).forEach(rule => {
+    (rule.techniques || []).forEach(tech => {
+      if (!map[tech]) map[tech] = [];
+      map[tech].push(rule);
+    });
+  });
+  return map;
+};
 
+// Technique Cell Component
+function TechniqueCell({ technique, hasCoverage, selectedTechnique, onClick, actorTechniques }) {
+  const isActorTech = actorTechniques.includes(technique.id);
+  
   return (
-    <motion.div
-      layout
-      onClick={() => onSelect(isCovered ? { id: techniqueId, ...technique, rules: coveredRules } : null)}
+    <button
+      onClick={() => onClick(technique)}
       className={cn(
-        "relative p-2 rounded-lg text-xs cursor-pointer transition-all",
-        "border border-transparent",
-        isCovered 
-          ? 'bg-cyber-500/20 hover:bg-cyber-500/30 hover:border-cyber-500/50' 
-          : 'bg-dark-800/50 hover:bg-dark-800 text-gray-500',
-        isSelected && 'border-cyber-500 ring-2 ring-cyber-500/20'
+        "p-2 rounded-lg text-xs font-medium transition-all text-left relative",
+        "border min-h-[60px]",
+        selectedTechnique?.id === technique.id && "ring-2 ring-cyber-500",
+        hasCoverage
+          ? 'bg-green-500/20 border-green-500/30 hover:bg-green-500/30'
+          : 'bg-dark-800/50 border-dark-700 hover:bg-dark-700',
+        isActorTech && !hasCoverage && 'bg-red-500/20 border-red-500/30',
+        isActorTech && hasCoverage && 'bg-yellow-500/20 border-yellow-500/30'
       )}
     >
-      <div className="font-mono text-[10px] text-gray-500">{techniqueId}</div>
-      <div className={cn(
-        "font-medium mt-0.5 line-clamp-2",
-        isCovered ? 'text-white' : 'text-gray-600'
-      )}>
-        {technique.name}
+      <span className="text-[10px] text-gray-500 font-mono">{technique.id}</span>
+      <p className="line-clamp-2 mt-0.5">{technique.name}</p>
+      
+      {/* Coverage/Actor indicator */}
+      <div className="absolute top-1 right-1 flex gap-0.5">
+        {hasCoverage && (
+          <div className="w-2 h-2 rounded-full bg-green-500" title="Has Detection" />
+        )}
+        {isActorTech && (
+          <div className="w-2 h-2 rounded-full bg-red-500" title="Used by Selected Threat Actor" />
+        )}
       </div>
-      
-      {isCovered && (
-        <div className="flex items-center gap-1 mt-1">
-          <Shield className="w-3 h-3 text-cyber-500" />
-          <span className="text-cyber-400">{coveredRules.length}</span>
-          {highSeverityCount > 0 && (
-            <span className="ml-1 px-1 py-0.5 rounded bg-orange-500/20 text-orange-400 text-[10px]">
-              {highSeverityCount} high
-            </span>
-          )}
-        </div>
-      )}
-      
-      {!isCovered && (
-        <div className="flex items-center gap-1 mt-1 text-gray-600">
-          <AlertTriangle className="w-3 h-3" />
-          <span>No coverage</span>
-        </div>
-      )}
-    </motion.div>
+    </button>
   );
 }
 
 // Tactic Column Component
-function TacticColumn({ tactic, techniques, rules, selectedTechnique, onSelectTechnique }) {
-  const tacticTechniques = Object.entries(techniques).filter(([id, tech]) => 
-    tech.tactic === tactic.id || 
-    (tech.tactic && tech.tactic.includes && tactic.name.toLowerCase().includes(tech.tactic.toLowerCase()))
-  );
-
-  const coverage = useMemo(() => {
-    let covered = 0;
-    tacticTechniques.forEach(([id]) => {
-      const hasCoverage = rules.some(r => 
-        (r.techniques || []).some(t => t === id || t.startsWith(id + '.'))
-      );
-      if (hasCoverage) covered++;
-    });
-    return tacticTechniques.length > 0 
-      ? Math.round((covered / tacticTechniques.length) * 100) 
-      : 0;
-  }, [tacticTechniques, rules]);
+function TacticColumn({ tactic, techniques, techniqueRules, selectedTechnique, onSelectTechnique, actorTechniques }) {
+  const covered = techniques.filter(t => techniqueRules[t.id]).length;
+  const total = techniques.length;
+  const coverage = total > 0 ? Math.round((covered / total) * 100) : 0;
 
   return (
-    <div className="flex flex-col min-w-[160px]">
+    <div className="flex flex-col min-w-[160px] max-w-[180px]">
       {/* Tactic Header */}
       <div 
-        className="p-3 rounded-t-lg text-center font-medium text-sm"
-        style={{ backgroundColor: tactic.color + '20', borderBottom: `2px solid ${tactic.color}` }}
+        className="p-3 rounded-t-lg border-b-2 mb-2"
+        style={{ backgroundColor: `${tactic.color}20`, borderColor: tactic.color }}
       >
-        <div className="text-white">{tactic.shortName}</div>
-        <div className="text-xs text-gray-400 mt-1">{tactic.id}</div>
-        <div className="flex items-center justify-center gap-1 mt-2">
-          <div className="h-1.5 w-16 bg-dark-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full rounded-full"
-              style={{ width: `${coverage}%`, backgroundColor: tactic.color }}
-            />
-          </div>
-          <span className="text-xs text-gray-400">{coverage}%</span>
+        <h3 className="font-semibold text-sm" style={{ color: tactic.color }}>
+          {tactic.shortName}
+        </h3>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-[10px] text-gray-500">{tactic.id}</span>
+          <span className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded-full",
+            coverage === 100 ? 'bg-green-500/20 text-green-400' :
+            coverage >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
+            'bg-red-500/20 text-red-400'
+          )}>
+            {coverage}% coverage
+          </span>
         </div>
       </div>
 
       {/* Techniques */}
-      <div className="flex-1 space-y-2 p-2 bg-dark-900/50 rounded-b-lg overflow-y-auto max-h-[500px]">
-        {tacticTechniques.map(([id, technique]) => (
-          <TechniqueCard
-            key={id}
-            techniqueId={id}
-            technique={technique}
-            rules={rules}
-            isSelected={selectedTechnique?.id === id}
-            onSelect={onSelectTechnique}
+      <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-400px)] pr-1">
+        {techniques.map(tech => (
+          <TechniqueCell
+            key={tech.id}
+            technique={tech}
+            hasCoverage={!!techniqueRules[tech.id]}
+            selectedTechnique={selectedTechnique}
+            onClick={onSelectTechnique}
+            actorTechniques={actorTechniques}
           />
         ))}
-        {tacticTechniques.length === 0 && (
-          <div className="text-center text-gray-600 text-xs py-4">
-            No techniques mapped
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// Selected Technique Detail Panel
-function TechniqueDetail({ technique, onClose }) {
+// Threat Actor Card
+function ThreatActorCard({ actor, isSelected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "p-4 rounded-lg border text-left transition-all w-full",
+        isSelected
+          ? 'bg-red-500/20 border-red-500'
+          : 'bg-dark-800/50 border-dark-700 hover:border-dark-600'
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <Users className={cn("w-5 h-5", isSelected ? 'text-red-500' : 'text-gray-500')} />
+        <span className="font-medium">{actor.name}</span>
+      </div>
+      <div className="flex flex-wrap gap-1 mt-2">
+        {actor.aliases.slice(0, 2).map(alias => (
+          <span key={alias} className="text-[10px] px-1.5 py-0.5 rounded bg-dark-700 text-gray-400">
+            {alias}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+        <Globe className="w-3 h-3" />
+        <span>{actor.origin}</span>
+      </div>
+    </button>
+  );
+}
+
+// Technique Detail Panel
+function TechniqueDetail({ technique, rules, onClose }) {
   if (!technique) return null;
 
   return (
@@ -133,145 +142,171 @@ function TechniqueDetail({ technique, onClose }) {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="bg-dark-800 rounded-xl border border-dark-700 p-6 space-y-4"
+      className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden"
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm text-gray-400">{technique.id}</span>
-            <a 
-              href={`https://attack.mitre.org/techniques/${technique.id.replace('.', '/')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyber-400 hover:text-cyber-300"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
+      <div className="p-6 border-b border-dark-700">
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="text-xs font-mono text-gray-500">{technique.id}</span>
+            <h3 className="text-lg font-bold mt-1">{technique.name}</h3>
           </div>
-          <h3 className="text-xl font-bold mt-1">{technique.name}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-dark-700 rounded">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <button 
-          onClick={onClose}
-          className="p-1 hover:bg-dark-700 rounded"
-        >
-          ×
-        </button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <CheckCircle className="w-5 h-5 text-green-500" />
-        <span className="text-green-400 font-medium">
-          {technique.rules.length} Detection Rule{technique.rules.length !== 1 ? 's' : ''}
-        </span>
-      </div>
-
-      <div className="space-y-2">
-        <h4 className="font-medium text-sm text-gray-400 uppercase">Covering Rules</h4>
-        {technique.rules.map(rule => (
-          <Link
-            key={rule.id}
-            to={`/rules/${rule.id}`}
-            className="flex items-center gap-3 p-3 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
-          >
-            <Shield className="w-5 h-5 text-cyber-500" />
-            <div className="flex-1">
-              <p className="font-medium">{rule.name}</p>
-              <p className="text-sm text-gray-400">{rule.category}</p>
+      <div className="p-6 space-y-6 max-h-[400px] overflow-y-auto">
+        {/* Coverage Status */}
+        <div>
+          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-cyber-500" />
+            Detection Coverage
+          </h4>
+          {rules.length > 0 ? (
+            <div className="space-y-2">
+              {rules.map(rule => (
+                <Link
+                  key={rule.id}
+                  to={`/rules/${rule.id}`}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{rule.name}</p>
+                    <p className="text-xs text-gray-500">{rule.category}</p>
+                  </div>
+                  <span className={cn("text-xs px-2 py-0.5 rounded-full", getSeverityBadge(rule.severity))}>
+                    {rule.severity}
+                  </span>
+                </Link>
+              ))}
             </div>
-            <span className={cn("text-xs px-2 py-1 rounded-full", getSeverityBadge(rule.severity))}>
-              {rule.severity}
-            </span>
-          </Link>
-        ))}
+          ) : (
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <div className="flex items-center gap-2 text-red-400">
+                <XCircle className="w-4 h-4" />
+                <span className="font-medium">No Detection Coverage</span>
+              </div>
+              <p className="text-sm text-gray-400 mt-2">
+                This technique is not currently covered by any detection rule in this pack.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Related Threat Actors */}
+        <div>
+          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <Users className="w-4 h-4 text-red-500" />
+            Known Threat Actors
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {THREAT_ACTORS.filter(a => a.techniques.includes(technique.id)).map(actor => (
+              <span key={actor.id} className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400">
+                {actor.name}
+              </span>
+            ))}
+            {!THREAT_ACTORS.some(a => a.techniques.includes(technique.id)) && (
+              <span className="text-xs text-gray-500">No known actors mapped to this technique</span>
+            )}
+          </div>
+        </div>
+
+        {/* MITRE Link */}
+        <div>
+          <a
+            href={`https://attack.mitre.org/techniques/${technique.id.replace('.', '/')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-cyber-400 hover:text-cyber-300"
+          >
+            <Info className="w-4 h-4" />
+            View on MITRE ATT&CK
+            <ChevronRight className="w-4 h-4" />
+          </a>
+        </div>
       </div>
 
-      <div className="pt-4 border-t border-dark-700">
-        <a
-          href={`https://attack.mitre.org/techniques/${technique.id.replace('.', '/')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors text-sm"
+      {/* Actions */}
+      <div className="p-6 bg-dark-900/50 flex gap-3">
+        <Link
+          to={`/simulator`}
+          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-sm font-medium"
         >
-          View on MITRE ATT&CK
-          <ExternalLink className="w-4 h-4" />
-        </a>
+          <Zap className="w-4 h-4" />
+          Simulate Attack
+        </Link>
+        <Link
+          to={`/kql`}
+          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors text-sm font-medium"
+        >
+          <Eye className="w-4 h-4" />
+          Build Detection
+        </Link>
       </div>
     </motion.div>
   );
 }
 
-// Coverage Stats
-function CoverageStats({ rules, techniques }) {
-  const stats = useMemo(() => {
-    const allTechniqueIds = Object.keys(techniques);
-    const coveredTechniques = new Set();
-    
-    rules.forEach(rule => {
-      (rule.techniques || []).forEach(t => coveredTechniques.add(t));
-    });
-
-    const coverage = Math.round((coveredTechniques.size / allTechniqueIds.length) * 100);
-    
-    const bySeverity = {
-      Critical: rules.filter(r => r.severity === 'Critical').length,
-      High: rules.filter(r => r.severity === 'High').length,
-      Medium: rules.filter(r => r.severity === 'Medium').length,
-      Low: rules.filter(r => r.severity === 'Low').length,
-    };
-
-    return {
-      totalRules: rules.length,
-      coveredTechniques: coveredTechniques.size,
-      totalTechniques: allTechniqueIds.length,
-      coverage,
-      bySeverity
-    };
-  }, [rules, techniques]);
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4 text-center">
-        <p className="text-3xl font-bold text-cyber-400">{stats.totalRules}</p>
-        <p className="text-sm text-gray-400">Total Rules</p>
-      </div>
-      <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4 text-center">
-        <p className="text-3xl font-bold text-green-400">{stats.coveredTechniques}</p>
-        <p className="text-sm text-gray-400">Techniques Covered</p>
-      </div>
-      <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4 text-center">
-        <p className="text-3xl font-bold">{stats.coverage}%</p>
-        <p className="text-sm text-gray-400">Coverage Score</p>
-      </div>
-      <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4 text-center">
-        <p className="text-3xl font-bold text-red-400">{stats.bySeverity.Critical + stats.bySeverity.High}</p>
-        <p className="text-sm text-gray-400">High+ Severity</p>
-      </div>
-      <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4 text-center">
-        <p className="text-3xl font-bold text-orange-400">{stats.totalTechniques - stats.coveredTechniques}</p>
-        <p className="text-sm text-gray-400">Gaps</p>
-      </div>
-    </div>
-  );
-}
-
 export default function MitreNavigator() {
-  const [selectedTechnique, setSelectedTechnique] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCoveredOnly, setShowCoveredOnly] = useState(false);
-  const rules = rulesData.rules || [];
+  const [selectedTechnique, setSelectedTechnique] = useState(null);
+  const [selectedActor, setSelectedActor] = useState(null);
+  const [showActors, setShowActors] = useState(false);
 
-  // Filter techniques based on search
-  const filteredTechniques = useMemo(() => {
-    if (!searchQuery) return MITRE_TECHNIQUES;
-    
-    const query = searchQuery.toLowerCase();
-    return Object.fromEntries(
-      Object.entries(MITRE_TECHNIQUES).filter(([id, tech]) =>
-        id.toLowerCase().includes(query) ||
-        tech.name.toLowerCase().includes(query)
-      )
-    );
-  }, [searchQuery]);
+  // Build mappings
+  const techniqueRulesMap = useMemo(() => buildTechniqueRulesMap(), []);
+  
+  // Build full technique list from MITRE_TECHNIQUES
+  const allTechniques = useMemo(() => {
+    return Object.entries(MITRE_TECHNIQUES).map(([id, tech]) => ({
+      id,
+      name: tech.name,
+      tactic: tech.tactic
+    }));
+  }, []);
+
+  // Group techniques by tactic
+  const techniquesByTactic = useMemo(() => {
+    const grouped = {};
+    MITRE_TACTICS.forEach(tactic => {
+      grouped[tactic.id] = allTechniques.filter(t => t.tactic === tactic.id);
+    });
+    return grouped;
+  }, [allTechniques]);
+
+  // Actor techniques
+  const actorTechniques = useMemo(() => {
+    if (!selectedActor) return [];
+    return selectedActor.techniques;
+  }, [selectedActor]);
+
+  // Coverage stats
+  const coverageStats = useMemo(() => {
+    const covered = Object.keys(techniqueRulesMap).length;
+    const total = allTechniques.length;
+    return {
+      covered,
+      total,
+      percentage: total > 0 ? Math.round((covered / total) * 100) : 0
+    };
+  }, [techniqueRulesMap, allTechniques]);
+
+  // Gap analysis
+  const gaps = useMemo(() => {
+    return allTechniques.filter(t => !techniqueRulesMap[t.id]);
+  }, [allTechniques, techniqueRulesMap]);
+
+  // Handle URL params
+  useEffect(() => {
+    const techId = searchParams.get('technique');
+    if (techId) {
+      const tech = allTechniques.find(t => t.id === techId);
+      if (tech) setSelectedTechnique(tech);
+    }
+  }, [searchParams, allTechniques]);
 
   return (
     <div className="space-y-6">
@@ -279,109 +314,194 @@ export default function MitreNavigator() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Target className="w-8 h-8 text-cyber-500" />
+            <Target className="w-8 h-8 text-purple-500" />
             MITRE ATT&CK Navigator
           </h1>
           <p className="text-gray-400 mt-1">
-            Visualize detection coverage across the ATT&CK framework
+            Interactive attack matrix with detection coverage analysis
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search techniques..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-lg bg-dark-800 border border-dark-700 focus:border-cyber-500 outline-none text-sm w-64"
-            />
-          </div>
-          
-          <button
-            onClick={() => setShowCoveredOnly(!showCoveredOnly)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors",
-              showCoveredOnly 
-                ? 'bg-cyber-500/20 border-cyber-500 text-cyber-400' 
-                : 'bg-dark-800 border-dark-700 hover:border-dark-600'
-            )}
-          >
-            <Filter className="w-4 h-4" />
-            Covered Only
-          </button>
+        <button
+          onClick={() => setShowActors(!showActors)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors",
+            showActors 
+              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+              : 'bg-dark-700 hover:bg-dark-600'
+          )}
+        >
+          <Users className="w-4 h-4" />
+          Threat Actors
+        </button>
+      </div>
 
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 border border-dark-700 hover:border-dark-600 transition-colors">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-3xl font-bold text-green-400">{coverageStats.covered}</p>
+            <CheckCircle className="w-6 h-6 text-green-500" />
+          </div>
+          <p className="text-sm text-gray-400">Techniques Covered</p>
+        </div>
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-3xl font-bold text-red-400">{gaps.length}</p>
+            <XCircle className="w-6 h-6 text-red-500" />
+          </div>
+          <p className="text-sm text-gray-400">Detection Gaps</p>
+        </div>
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-3xl font-bold">{coverageStats.percentage}%</p>
+            <Shield className="w-6 h-6 text-cyber-500" />
+          </div>
+          <p className="text-sm text-gray-400">Overall Coverage</p>
+        </div>
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-3xl font-bold">{THREAT_ACTORS.length}</p>
+            <Users className="w-6 h-6 text-purple-500" />
+          </div>
+          <p className="text-sm text-gray-400">Threat Actors Tracked</p>
         </div>
       </div>
 
-      {/* Coverage Stats */}
-      <CoverageStats rules={rules} techniques={MITRE_TECHNIQUES} />
+      {/* Threat Actors Panel */}
+      <AnimatePresence>
+        {showActors && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-red-500" />
+                Threat Actor Tracking
+                <span className="text-xs text-gray-500">
+                  (Select to highlight their techniques)
+                </span>
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {THREAT_ACTORS.map(actor => (
+                  <ThreatActorCard
+                    key={actor.id}
+                    actor={actor}
+                    isSelected={selectedActor?.id === actor.id}
+                    onClick={() => setSelectedActor(selectedActor?.id === actor.id ? null : actor)}
+                  />
+                ))}
+              </div>
+              
+              {selectedActor && (
+                <div className="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-red-500" />
+                    <div>
+                      <h4 className="font-medium text-red-400">{selectedActor.name}</h4>
+                      <p className="text-xs text-gray-400">
+                        Origin: {selectedActor.origin} | Targets: {selectedActor.targets.join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    <span className="text-xs text-gray-500">Known Techniques:</span>
+                    {selectedActor.techniques.map(tech => (
+                      <span 
+                        key={tech}
+                        className={cn(
+                          "text-xs px-1.5 py-0.5 rounded font-mono",
+                          techniqueRulesMap[tech] 
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                        )}
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Matrix and Detail */}
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <input
+          type="text"
+          placeholder="Search techniques..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 rounded-lg bg-dark-800 border border-dark-700 focus:border-cyber-500 outline-none text-sm"
+        />
+      </div>
+
+      {/* Matrix + Detail */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* MITRE Matrix */}
         <div className="xl:col-span-3 overflow-x-auto">
-          <div className="flex gap-2 pb-4 min-w-max">
+          <div className="flex gap-2 min-w-max pb-4">
             {MITRE_TACTICS.map(tactic => (
               <TacticColumn
                 key={tactic.id}
                 tactic={tactic}
-                techniques={filteredTechniques}
-                rules={rules}
+                techniques={techniquesByTactic[tactic.id] || []}
+                techniqueRules={techniqueRulesMap}
                 selectedTechnique={selectedTechnique}
                 onSelectTechnique={setSelectedTechnique}
+                actorTechniques={actorTechniques}
               />
             ))}
           </div>
         </div>
 
         {/* Detail Panel */}
-        <div className="xl:col-span-1">
+        <div className="xl:sticky xl:top-24 xl:self-start">
           <AnimatePresence mode="wait">
             {selectedTechnique ? (
-              <TechniqueDetail 
+              <TechniqueDetail
                 key={selectedTechnique.id}
-                technique={selectedTechnique} 
+                technique={selectedTechnique}
+                rules={techniqueRulesMap[selectedTechnique.id] || []}
                 onClose={() => setSelectedTechnique(null)}
               />
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="bg-dark-800/50 rounded-xl border border-dark-700 p-6 text-center"
+                className="bg-dark-800/50 rounded-xl border border-dark-700 p-8 text-center"
               >
-                <Eye className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                <MapIcon className="w-12 h-12 mx-auto text-gray-600 mb-4" />
                 <h3 className="font-medium text-gray-400">Select a Technique</h3>
                 <p className="text-sm text-gray-500 mt-2">
-                  Click on any technique in the matrix to view coverage details
+                  Click on any technique to view detection coverage and related threat actors
                 </p>
+
+                {/* Legend */}
+                <div className="mt-6 pt-6 border-t border-dark-700 space-y-2">
+                  <p className="text-xs text-gray-500 uppercase mb-3">Legend</p>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span>Has Detection Coverage</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <span>Used by Selected Threat Actor</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <span>Covered + Actor Match</span>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-        <h3 className="font-medium mb-3">Legend</h3>
-        <div className="flex flex-wrap gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-cyber-500/30 border border-cyber-500" />
-            <span className="text-sm">Covered by detection rules</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-dark-800 border border-dark-700" />
-            <span className="text-sm text-gray-500">No coverage (gap)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 text-xs">high</span>
-            <span className="text-sm">Contains high/critical severity rules</span>
-          </div>
         </div>
       </div>
     </div>
