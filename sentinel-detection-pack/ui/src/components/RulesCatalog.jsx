@@ -33,16 +33,16 @@ function RuleCard({ rule, stats, isSelected, onClick }) {
       layout
       onClick={onClick}
       className={cn(
-        "p-4 rounded-xl border cursor-pointer transition-all",
+        "p-3 sm:p-4 rounded-xl border cursor-pointer transition-all",
         "bg-dark-800/50 hover:bg-dark-800",
         isSelected 
           ? 'border-cyber-500 ring-2 ring-cyber-500/20' 
           : 'border-dark-700 hover:border-dark-600'
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 sm:gap-3">
         <div className={cn(
-          "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+          "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0",
           rule.severity === 'Critical' ? 'bg-red-500/20' :
           rule.severity === 'High' ? 'bg-orange-500/20' :
           rule.severity === 'Medium' ? 'bg-yellow-500/20' :
