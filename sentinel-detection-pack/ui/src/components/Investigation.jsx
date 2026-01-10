@@ -6,7 +6,11 @@ import ReactFlow, {
   Controls, 
   MiniMap,
   Handle,
-  Position
+  Position,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  MarkerType
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -14,377 +18,394 @@ import {
   Clock, ChevronRight, Shield, Target, Eye,
   Copy, Check, ExternalLink, RefreshCw, Plus,
   Tag, MessageSquare, FileText, Download, X,
-  Zap, Hash, Activity, Lock, Unlock, Flag
+  Zap, Hash, Activity, Lock, Unlock, Flag,
+  File, Terminal, Database, Mail, Link2, Cpu,
+  TrendingUp, Wifi, Server, Key, Filter
 } from 'lucide-react';
 import { cn, formatRelativeTime, getSeverityBadge, v4 as uuidv4 } from '../services/utils';
 import { useAppStore } from '../store/appStore';
 import { threatIntelService } from '../services/threatIntelService';
 
-// OSINT Lookup Service
-const osintLookup = {
-  async lookupIP(ip) {
-    // Simulate API call - in production, use real APIs
-    const threatData = await threatIntelService.lookupIP(ip);
-    return {
-      ip,
-      ...threatData,
-      whois: {
-        org: 'Example ISP',
-        country: 'Unknown',
-        asn: 'AS12345'
-      },
-      ports: [22, 80, 443],
-      geoip: { city: 'Unknown', country: 'Unknown', lat: 0, lng: 0 },
-      lastSeen: new Date().toISOString()
-    };
-  },
-
-  async lookupDomain(domain) {
-    const threatData = await threatIntelService.lookupDomain(domain);
-    return {
-      domain,
-      ...threatData,
-      registrar: 'Unknown Registrar',
-      created: 'Unknown',
-      nameservers: ['ns1.example.com', 'ns2.example.com'],
-      ip: '0.0.0.0'
-    };
-  },
-
-  async lookupHash(hash) {
-    return {
-      hash,
-      reputation: hash.startsWith('a1') ? 'malicious' : 'unknown',
-      detections: Math.floor(Math.random() * 50) + 20,
-      totalEngines: 72,
-      names: ['Trojan.Generic', 'Mal/Unknown-XYZ'],
-      firstSeen: new Date(Date.now() - 30 * 24 * 60 * 60000).toISOString(),
-      lastSeen: new Date().toISOString()
-    };
-  }
+// Risk score colors
+const getRiskColor = (score) => {
+  if (score >= 80) return { bg: 'bg-red-500', text: 'text-red-400', border: 'border-red-500' };
+  if (score >= 60) return { bg: 'bg-orange-500', text: 'text-orange-400', border: 'border-orange-500' };
+  if (score >= 40) return { bg: 'bg-yellow-500', text: 'text-yellow-400', border: 'border-yellow-500' };
+  if (score >= 20) return { bg: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500' };
+  return { bg: 'bg-green-500', text: 'text-green-400', border: 'border-green-500' };
 };
 
-// Custom Node Components
-const nodeTypes = {
-  user: ({ data }) => (
+// Custom Node Components with enhanced visuals
+const UserNode = ({ data, selected }) => {
+  const riskColors = getRiskColor(data.riskScore || 0);
+  return (
     <div className={cn(
-      "px-4 py-3 rounded-lg border-2 min-w-[150px]",
-      data.isSuspicious ? 'bg-red-500/20 border-red-500' : 'bg-blue-500/20 border-blue-500'
+      "px-4 py-3 rounded-xl border-2 min-w-[160px] transition-all",
+      "bg-gradient-to-br from-blue-500/20 to-blue-600/10",
+      selected ? 'border-cyber-500 ring-2 ring-cyber-500/30' : riskColors.border,
+      data.isCompromised && "animate-pulse"
     )}>
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
-      <div className="flex items-center gap-2">
-        <User className={cn("w-5 h-5", data.isSuspicious ? 'text-red-400' : 'text-blue-400')} />
-        <div>
-          <p className="font-medium text-sm">{data.label}</p>
-          <p className="text-xs text-gray-500">User</p>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-blue-500" />
+      <div className="flex items-center gap-3">
+        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", riskColors.bg + '/30')}>
+          <User className={cn("w-5 h-5", riskColors.text)} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{data.label}</p>
+          <p className="text-xs text-gray-400">{data.department || 'User'}</p>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
+      {data.riskScore > 0 && (
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-[10px] text-gray-500">Risk Score</span>
+          <div className="flex items-center gap-1">
+            <div className="w-16 h-1.5 bg-dark-700 rounded-full overflow-hidden">
+              <div className={cn("h-full rounded-full", riskColors.bg)} style={{ width: `${data.riskScore}%` }} />
+            </div>
+            <span className={cn("text-xs font-bold", riskColors.text)}>{data.riskScore}</span>
+          </div>
+        </div>
+      )}
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-blue-500" />
     </div>
-  ),
-  device: ({ data }) => (
+  );
+};
+
+const DeviceNode = ({ data, selected }) => {
+  const riskColors = getRiskColor(data.riskScore || 0);
+  return (
     <div className={cn(
-      "px-4 py-3 rounded-lg border-2 min-w-[150px]",
-      data.isSuspicious ? 'bg-red-500/20 border-red-500' : 'bg-purple-500/20 border-purple-500'
+      "px-4 py-3 rounded-xl border-2 min-w-[160px] transition-all",
+      "bg-gradient-to-br from-purple-500/20 to-purple-600/10",
+      selected ? 'border-cyber-500 ring-2 ring-cyber-500/30' : riskColors.border,
+      data.isolated && "border-dashed"
     )}>
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
-      <div className="flex items-center gap-2">
-        <Monitor className={cn("w-5 h-5", data.isSuspicious ? 'text-red-400' : 'text-purple-400')} />
-        <div>
-          <p className="font-medium text-sm">{data.label}</p>
-          <p className="text-xs text-gray-500">Device</p>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-purple-500" />
+      <div className="flex items-center gap-3">
+        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", riskColors.bg + '/30')}>
+          <Monitor className={cn("w-5 h-5", riskColors.text)} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{data.label}</p>
+          <p className="text-xs text-gray-400">{data.os || 'Device'}</p>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
+      {data.isolated && (
+        <div className="mt-2 px-2 py-1 rounded bg-orange-500/20 text-orange-400 text-[10px] text-center">
+          ISOLATED
+        </div>
+      )}
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-purple-500" />
     </div>
-  ),
-  ip: ({ data }) => (
+  );
+};
+
+const IPNode = ({ data, selected }) => {
+  const riskColors = getRiskColor(data.riskScore || 0);
+  const isMalicious = data.reputation === 'malicious';
+  return (
     <div className={cn(
-      "px-4 py-3 rounded-lg border-2 min-w-[150px]",
-      data.isMalicious ? 'bg-red-500/20 border-red-500' : 
-      data.isSuspicious ? 'bg-yellow-500/20 border-yellow-500' :
-      'bg-green-500/20 border-green-500'
+      "px-4 py-3 rounded-xl border-2 min-w-[150px] transition-all",
+      isMalicious ? "bg-gradient-to-br from-red-500/20 to-red-600/10" : "bg-gradient-to-br from-green-500/20 to-green-600/10",
+      selected ? 'border-cyber-500 ring-2 ring-cyber-500/30' : isMalicious ? 'border-red-500' : 'border-green-500'
     )}>
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
-      <div className="flex items-center gap-2">
-        <Globe className={cn(
-          "w-5 h-5",
-          data.isMalicious ? 'text-red-400' : 
-          data.isSuspicious ? 'text-yellow-400' :
-          'text-green-400'
-        )} />
-        <div>
-          <p className="font-medium text-sm font-mono">{data.label}</p>
-          <p className="text-xs text-gray-500">{data.country || 'IP Address'}</p>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-500" />
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center",
+          isMalicious ? 'bg-red-500/30' : 'bg-green-500/30'
+        )}>
+          <Globe className={cn("w-5 h-5", isMalicious ? 'text-red-400' : 'text-green-400')} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-sm truncate">{data.label}</p>
+          <p className="text-xs text-gray-400">{data.country || data.asn || 'IP Address'}</p>
         </div>
       </div>
       {data.reputation && (
         <div className={cn(
-          "mt-2 text-xs px-2 py-0.5 rounded text-center",
-          data.isMalicious ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
+          "mt-2 px-2 py-1 rounded text-[10px] text-center font-medium uppercase",
+          isMalicious ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
         )}>
           {data.reputation}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
-    </div>
-  ),
-  alert: ({ data }) => (
-    <div className={cn(
-      "px-4 py-3 rounded-lg border-2 min-w-[180px]",
-      data.severity === 'Critical' ? 'bg-red-500/20 border-red-500' :
-      data.severity === 'High' ? 'bg-orange-500/20 border-orange-500' :
-      'bg-yellow-500/20 border-yellow-500'
-    )}>
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
-      <div className="flex items-center gap-2">
-        <AlertTriangle className={cn(
-          "w-5 h-5",
-          data.severity === 'Critical' ? 'text-red-400' :
-          data.severity === 'High' ? 'text-orange-400' :
-          'text-yellow-400'
-        )} />
-        <div>
-          <p className="font-medium text-sm line-clamp-1">{data.label}</p>
-          <p className="text-xs text-gray-500">{data.time || 'Alert'}</p>
-        </div>
-      </div>
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
-    </div>
-  ),
-};
-
-// Evidence Panel
-function EvidencePanel({ evidence, onAdd, onRemove }) {
-  const [newNote, setNewNote] = useState('');
-
-  return (
-    <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
-      <div className="p-4 border-b border-dark-700">
-        <h3 className="font-medium flex items-center gap-2">
-          <FileText className="w-4 h-4 text-cyber-500" />
-          Evidence & Notes
-        </h3>
-      </div>
-      
-      <div className="p-4 space-y-4 max-h-[300px] overflow-y-auto">
-        {evidence.map((item, index) => (
-          <div key={index} className="flex items-start gap-3 p-3 bg-dark-700/50 rounded-lg group">
-            {item.type === 'note' && <MessageSquare className="w-4 h-4 text-blue-400 mt-0.5" />}
-            {item.type === 'tag' && <Tag className="w-4 h-4 text-green-400 mt-0.5" />}
-            {item.type === 'ioc' && <Target className="w-4 h-4 text-red-400 mt-0.5" />}
-            <div className="flex-1">
-              <p className="text-sm">{item.content}</p>
-              <p className="text-xs text-gray-500 mt-1">{formatRelativeTime(item.timestamp)}</p>
-            </div>
-            <button 
-              onClick={() => onRemove(index)}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-dark-600 rounded"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        ))}
-
-        {evidence.length === 0 && (
-          <p className="text-center text-gray-500 text-sm py-4">No evidence collected yet</p>
-        )}
-      </div>
-
-      <div className="p-4 border-t border-dark-700">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add a note..."
-            className="flex-1 px-3 py-2 rounded-lg bg-dark-700 border border-dark-600 text-sm outline-none focus:border-cyber-500"
-          />
-          <button
-            onClick={() => {
-              if (newNote.trim()) {
-                onAdd({ type: 'note', content: newNote, timestamp: new Date().toISOString() });
-                setNewNote('');
-              }
-            }}
-            className="px-3 py-2 rounded-lg bg-cyber-500/20 text-cyber-400 hover:bg-cyber-500/30"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-500" />
     </div>
   );
-}
+};
 
-// OSINT Lookup Panel
-function OSINTPanel({ selectedEntity, onLookup }) {
-  const [query, setQuery] = useState('');
-  const [queryType, setQueryType] = useState('ip');
-  const [result, setResult] = useState(null);
+const ProcessNode = ({ data, selected }) => {
+  const isSuspicious = data.suspicious;
+  return (
+    <div className={cn(
+      "px-4 py-3 rounded-xl border-2 min-w-[160px] transition-all",
+      isSuspicious ? "bg-gradient-to-br from-orange-500/20 to-orange-600/10 border-orange-500" : "bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border-cyan-500",
+      selected && 'ring-2 ring-cyber-500/30'
+    )}>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-cyan-500" />
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center",
+          isSuspicious ? 'bg-orange-500/30' : 'bg-cyan-500/30'
+        )}>
+          <Terminal className={cn("w-5 h-5", isSuspicious ? 'text-orange-400' : 'text-cyan-400')} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-sm truncate">{data.label}</p>
+          <p className="text-xs text-gray-400">PID: {data.pid || '????'}</p>
+        </div>
+      </div>
+      {data.commandLine && (
+        <div className="mt-2 p-1.5 bg-dark-900 rounded text-[10px] font-mono text-gray-400 truncate">
+          {data.commandLine}
+        </div>
+      )}
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-cyan-500" />
+    </div>
+  );
+};
+
+const FileNode = ({ data, selected }) => {
+  const isMalicious = data.malicious;
+  return (
+    <div className={cn(
+      "px-4 py-3 rounded-xl border-2 min-w-[150px] transition-all",
+      isMalicious ? "bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-500" : "bg-gradient-to-br from-gray-500/20 to-gray-600/10 border-gray-500",
+      selected && 'ring-2 ring-cyber-500/30'
+    )}>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-500" />
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center",
+          isMalicious ? 'bg-red-500/30' : 'bg-gray-500/30'
+        )}>
+          <File className={cn("w-5 h-5", isMalicious ? 'text-red-400' : 'text-gray-400')} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate">{data.label}</p>
+          <p className="text-xs text-gray-400">{data.size || 'File'}</p>
+        </div>
+      </div>
+      {data.hash && (
+        <div className="mt-2 p-1 bg-dark-900 rounded text-[9px] font-mono text-gray-500 truncate">
+          {data.hash.substring(0, 16)}...
+        </div>
+      )}
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-500" />
+    </div>
+  );
+};
+
+const AlertNode = ({ data, selected }) => {
+  const severityColors = {
+    Critical: 'from-red-500/20 to-red-600/10 border-red-500',
+    High: 'from-orange-500/20 to-orange-600/10 border-orange-500',
+    Medium: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500',
+    Low: 'from-blue-500/20 to-blue-600/10 border-blue-500'
+  };
+  return (
+    <div className={cn(
+      "px-4 py-3 rounded-xl border-2 min-w-[180px] transition-all bg-gradient-to-br",
+      severityColors[data.severity] || severityColors.Medium,
+      selected && 'ring-2 ring-cyber-500/30'
+    )}>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-orange-500" />
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-500/30">
+          <AlertTriangle className="w-5 h-5 text-orange-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{data.label}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className={cn("text-[10px] px-1.5 py-0.5 rounded", getSeverityBadge(data.severity))}>
+              {data.severity}
+            </span>
+            <span className="text-[10px] text-gray-500">{data.time}</span>
+          </div>
+        </div>
+      </div>
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-orange-500" />
+    </div>
+  );
+};
+
+const DomainNode = ({ data, selected }) => {
+  const isMalicious = data.malicious;
+  return (
+    <div className={cn(
+      "px-4 py-3 rounded-xl border-2 min-w-[150px] transition-all",
+      isMalicious ? "bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-500" : "bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 border-indigo-500",
+      selected && 'ring-2 ring-cyber-500/30'
+    )}>
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-indigo-500" />
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center",
+          isMalicious ? 'bg-red-500/30' : 'bg-indigo-500/30'
+        )}>
+          <Link2 className={cn("w-5 h-5", isMalicious ? 'text-red-400' : 'text-indigo-400')} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-sm truncate">{data.label}</p>
+          <p className="text-xs text-gray-400">{data.registrar || 'Domain'}</p>
+        </div>
+      </div>
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-indigo-500" />
+    </div>
+  );
+};
+
+const nodeTypes = {
+  user: UserNode,
+  device: DeviceNode,
+  ip: IPNode,
+  process: ProcessNode,
+  file: FileNode,
+  alert: AlertNode,
+  domain: DomainNode,
+};
+
+// Entity Details Panel
+function EntityDetailsPanel({ entity, onClose, onLookup }) {
+  const [lookupResult, setLookupResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (selectedEntity) {
-      setQuery(selectedEntity.label || '');
-      setQueryType(selectedEntity.type || 'ip');
-    }
-  }, [selectedEntity]);
 
   const handleLookup = async () => {
-    if (!query.trim()) return;
+    if (!entity) return;
     setLoading(true);
     try {
-      let data;
-      if (queryType === 'ip') {
-        data = await osintLookup.lookupIP(query);
-      } else if (queryType === 'domain') {
-        data = await osintLookup.lookupDomain(query);
-      } else if (queryType === 'hash') {
-        data = await osintLookup.lookupHash(query);
+      let result;
+      if (entity.type === 'ip') {
+        result = await threatIntelService.lookupIP(entity.data.label);
+      } else if (entity.type === 'domain') {
+        result = await threatIntelService.lookupDomain(entity.data.label);
       }
-      setResult(data);
-      if (onLookup) onLookup(data);
-    } catch (error) {
-      console.error('Lookup failed:', error);
+      setLookupResult(result);
+    } catch (e) {
+      console.error(e);
     }
     setLoading(false);
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  if (!entity) return null;
 
   return (
-    <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
-      <div className="p-4 border-b border-dark-700">
-        <h3 className="font-medium flex items-center gap-2">
-          <Search className="w-4 h-4 text-cyber-500" />
-          OSINT Lookup
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden"
+    >
+      <div className="p-4 border-b border-dark-700 flex items-center justify-between">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Eye className="w-4 h-4 text-cyber-500" />
+          Entity Details
         </h3>
+        <button onClick={onClose} className="p-1 hover:bg-dark-700 rounded">
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Input */}
-        <div className="flex gap-2">
-          <select
-            value={queryType}
-            onChange={(e) => setQueryType(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-dark-700 border border-dark-600 text-sm outline-none"
-          >
-            <option value="ip">IP</option>
-            <option value="domain">Domain</option>
-            <option value="hash">Hash</option>
-          </select>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-            placeholder={`Enter ${queryType}...`}
-            className="flex-1 px-3 py-2 rounded-lg bg-dark-700 border border-dark-600 text-sm outline-none focus:border-cyber-500 font-mono"
-          />
-          <button
-            onClick={handleLookup}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-cyber-500 text-white hover:bg-cyber-600 disabled:opacity-50"
-          >
-            {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          </button>
+      <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+        {/* Entity Info */}
+        <div className="p-3 rounded-lg bg-dark-700/50">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-12 h-12 rounded-lg flex items-center justify-center",
+              entity.type === 'user' ? 'bg-blue-500/30' :
+              entity.type === 'device' ? 'bg-purple-500/30' :
+              entity.type === 'ip' ? 'bg-green-500/30' :
+              entity.type === 'process' ? 'bg-cyan-500/30' :
+              'bg-gray-500/30'
+            )}>
+              {entity.type === 'user' && <User className="w-6 h-6 text-blue-400" />}
+              {entity.type === 'device' && <Monitor className="w-6 h-6 text-purple-400" />}
+              {entity.type === 'ip' && <Globe className="w-6 h-6 text-green-400" />}
+              {entity.type === 'process' && <Terminal className="w-6 h-6 text-cyan-400" />}
+              {entity.type === 'file' && <File className="w-6 h-6 text-gray-400" />}
+              {entity.type === 'alert' && <AlertTriangle className="w-6 h-6 text-orange-400" />}
+              {entity.type === 'domain' && <Link2 className="w-6 h-6 text-indigo-400" />}
+            </div>
+            <div>
+              <p className="font-semibold">{entity.data.label}</p>
+              <p className="text-sm text-gray-400 capitalize">{entity.type}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Result */}
-        {result && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            {/* Reputation Badge */}
-            <div className={cn(
-              "p-4 rounded-lg border",
-              result.reputation === 'malicious' ? 'bg-red-500/10 border-red-500/30' :
-              result.reputation === 'suspicious' ? 'bg-yellow-500/10 border-yellow-500/30' :
-              'bg-green-500/10 border-green-500/30'
-            )}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {result.reputation === 'malicious' ? (
-                    <Lock className="w-5 h-5 text-red-500" />
-                  ) : result.reputation === 'suspicious' ? (
-                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                  ) : (
-                    <Unlock className="w-5 h-5 text-green-500" />
-                  )}
-                  <span className="font-medium capitalize">{result.reputation}</span>
-                </div>
-                {result.score !== undefined && (
-                  <span className={cn(
-                    "text-lg font-bold",
-                    result.score >= 70 ? 'text-red-400' :
-                    result.score >= 30 ? 'text-yellow-400' :
-                    'text-green-400'
-                  )}>
-                    {result.score}/100
-                  </span>
-                )}
+        {/* Risk Score */}
+        {entity.data.riskScore !== undefined && (
+          <div>
+            <p className="text-xs text-gray-500 uppercase mb-2">Risk Assessment</p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-3 bg-dark-700 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${entity.data.riskScore}%` }}
+                  className={cn("h-full rounded-full", getRiskColor(entity.data.riskScore).bg)}
+                />
               </div>
+              <span className={cn("text-lg font-bold", getRiskColor(entity.data.riskScore).text)}>
+                {entity.data.riskScore}
+              </span>
             </div>
-
-            {/* Details */}
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {queryType === 'ip' && result.whois && (
-                <>
-                  <div className="p-2 rounded bg-dark-700/50">
-                    <p className="text-xs text-gray-500">Organization</p>
-                    <p className="font-mono text-xs">{result.whois.org}</p>
-                  </div>
-                  <div className="p-2 rounded bg-dark-700/50">
-                    <p className="text-xs text-gray-500">ASN</p>
-                    <p className="font-mono text-xs">{result.whois.asn}</p>
-                  </div>
-                </>
-              )}
-              {result.reports !== undefined && (
-                <div className="p-2 rounded bg-dark-700/50">
-                  <p className="text-xs text-gray-500">Reports</p>
-                  <p className="font-bold">{result.reports}</p>
-                </div>
-              )}
-              {result.lastSeen && (
-                <div className="p-2 rounded bg-dark-700/50">
-                  <p className="text-xs text-gray-500">Last Seen</p>
-                  <p className="text-xs">{formatRelativeTime(result.lastSeen)}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}
-                className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs"
-              >
-                {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                Copy JSON
-              </button>
-              <a
-                href={`https://www.virustotal.com/gui/${queryType}/${query}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs"
-              >
-                <ExternalLink className="w-3 h-3" />
-                VirusTotal
-              </a>
-            </div>
-          </motion.div>
+          </div>
         )}
+
+        {/* Properties */}
+        <div>
+          <p className="text-xs text-gray-500 uppercase mb-2">Properties</p>
+          <div className="space-y-2">
+            {Object.entries(entity.data).filter(([k]) => !['label', 'riskScore'].includes(k)).map(([key, value]) => (
+              <div key={key} className="flex justify-between text-sm">
+                <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                <span className="font-mono text-xs truncate max-w-[150px]">{String(value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* OSINT Lookup */}
+        {(entity.type === 'ip' || entity.type === 'domain') && (
+          <div>
+            <button
+              onClick={handleLookup}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-cyber-500/20 text-cyber-400 hover:bg-cyber-500/30 text-sm font-medium"
+            >
+              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Lookup Reputation
+            </button>
+            
+            {lookupResult && (
+              <div className={cn(
+                "mt-3 p-3 rounded-lg border",
+                lookupResult.reputation === 'malicious' ? 'bg-red-500/10 border-red-500/30' :
+                lookupResult.reputation === 'suspicious' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                'bg-green-500/10 border-green-500/30'
+              )}>
+                <div className="flex items-center gap-2">
+                  {lookupResult.reputation === 'malicious' ? <Lock className="w-4 h-4 text-red-400" /> :
+                   lookupResult.reputation === 'suspicious' ? <AlertTriangle className="w-4 h-4 text-yellow-400" /> :
+                   <Unlock className="w-4 h-4 text-green-400" />}
+                  <span className="font-medium capitalize">{lookupResult.reputation}</span>
+                  {lookupResult.score !== undefined && (
+                    <span className="ml-auto font-bold">{lookupResult.score}/100</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Related Entities */}
+        <div>
+          <p className="text-xs text-gray-500 uppercase mb-2">Related Entities</p>
+          <p className="text-sm text-gray-400">Click edges in the graph to explore connections</p>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -393,62 +414,116 @@ function TimelinePanel({ events }) {
   return (
     <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
       <div className="p-4 border-b border-dark-700">
-        <h3 className="font-medium flex items-center gap-2">
+        <h3 className="font-semibold flex items-center gap-2">
           <Clock className="w-4 h-4 text-cyber-500" />
-          Investigation Timeline
+          Attack Timeline
         </h3>
       </div>
 
       <div className="p-4 max-h-[300px] overflow-y-auto">
-        <div className="space-y-4">
-          {events.map((event, index) => (
-            <div key={index} className="flex gap-3">
-              <div className="flex flex-col items-center">
+        <div className="relative">
+          {/* Timeline line */}
+          <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-dark-600" />
+          
+          <div className="space-y-4">
+            {events.map((event, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex gap-4 relative"
+              >
                 <div className={cn(
-                  "w-3 h-3 rounded-full",
+                  "w-6 h-6 rounded-full flex items-center justify-center z-10 flex-shrink-0",
                   event.type === 'alert' ? 'bg-red-500' :
                   event.type === 'action' ? 'bg-blue-500' :
-                  'bg-gray-500'
-                )} />
-                {index < events.length - 1 && (
-                  <div className="w-0.5 h-full bg-dark-600 mt-1" />
-                )}
-              </div>
-              <div className="flex-1 pb-4">
-                <p className="font-medium text-sm">{event.title}</p>
-                <p className="text-xs text-gray-400 mt-1">{event.description}</p>
-                <p className="text-xs text-gray-600 mt-1">{formatRelativeTime(event.timestamp)}</p>
-              </div>
-            </div>
-          ))}
+                  event.type === 'system' ? 'bg-gray-500' :
+                  'bg-cyber-500'
+                )}>
+                  {event.type === 'alert' && <AlertTriangle className="w-3 h-3 text-white" />}
+                  {event.type === 'action' && <Activity className="w-3 h-3 text-white" />}
+                  {event.type === 'system' && <Cpu className="w-3 h-3 text-white" />}
+                </div>
+                <div className="flex-1 pb-4">
+                  <p className="font-medium text-sm">{event.title}</p>
+                  <p className="text-xs text-gray-400 mt-1">{event.description}</p>
+                  <p className="text-[10px] text-gray-600 mt-1">{formatRelativeTime(event.timestamp)}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// Sample investigation data
+// Legend Panel
+function LegendPanel() {
+  const items = [
+    { type: 'User', color: 'bg-blue-500', icon: User },
+    { type: 'Device', color: 'bg-purple-500', icon: Monitor },
+    { type: 'IP Address', color: 'bg-green-500', icon: Globe },
+    { type: 'Process', color: 'bg-cyan-500', icon: Terminal },
+    { type: 'File', color: 'bg-gray-500', icon: File },
+    { type: 'Alert', color: 'bg-orange-500', icon: AlertTriangle },
+    { type: 'Domain', color: 'bg-indigo-500', icon: Link2 },
+  ];
+
+  return (
+    <div className="bg-dark-800/80 rounded-lg border border-dark-700 p-3 backdrop-blur-sm">
+      <p className="text-xs text-gray-500 uppercase mb-2">Entity Types</p>
+      <div className="grid grid-cols-2 gap-2">
+        {items.map(item => {
+          const Icon = item.icon;
+          return (
+            <div key={item.type} className="flex items-center gap-2 text-xs">
+              <div className={cn("w-4 h-4 rounded flex items-center justify-center", item.color + '/30')}>
+                <Icon className={cn("w-2.5 h-2.5", item.color.replace('bg-', 'text-').replace('-500', '-400'))} />
+              </div>
+              <span className="text-gray-400">{item.type}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Generate investigation data
 const generateInvestigationData = () => {
   const nodes = [
-    { id: 'user-1', type: 'user', position: { x: 250, y: 0 }, data: { label: 'alice@contoso.com', isSuspicious: true } },
-    { id: 'device-1', type: 'device', position: { x: 100, y: 150 }, data: { label: 'WORKSTATION-01' } },
-    { id: 'ip-1', type: 'ip', position: { x: 400, y: 150 }, data: { label: '45.155.205.233', isMalicious: true, reputation: 'malicious', country: 'RU' } },
-    { id: 'alert-1', type: 'alert', position: { x: 250, y: 300 }, data: { label: 'Password Spray Detected', severity: 'High', time: '10 min ago' } },
-    { id: 'ip-2', type: 'ip', position: { x: 500, y: 300 }, data: { label: '10.0.1.15', reputation: 'internal', country: 'Internal' } },
+    { id: 'user-1', type: 'user', position: { x: 400, y: 50 }, data: { label: 'alice@contoso.com', department: 'Finance', riskScore: 85, isCompromised: true } },
+    { id: 'device-1', type: 'device', position: { x: 150, y: 200 }, data: { label: 'WORKSTATION-01', os: 'Windows 11', riskScore: 70, isolated: false } },
+    { id: 'device-2', type: 'device', position: { x: 650, y: 200 }, data: { label: 'LAPTOP-ALICE', os: 'Windows 11', riskScore: 45 } },
+    { id: 'ip-1', type: 'ip', position: { x: 100, y: 400 }, data: { label: '45.155.205.233', country: 'Russia', reputation: 'malicious', riskScore: 95 } },
+    { id: 'ip-2', type: 'ip', position: { x: 400, y: 350 }, data: { label: '10.0.1.15', country: 'Internal', reputation: 'clean', riskScore: 10 } },
+    { id: 'process-1', type: 'process', position: { x: 300, y: 500 }, data: { label: 'powershell.exe', pid: '4532', commandLine: '-enc SQBFAFgA...', suspicious: true } },
+    { id: 'file-1', type: 'file', position: { x: 550, y: 500 }, data: { label: 'payload.ps1', size: '4.2 KB', hash: 'a1b2c3d4e5f6789...', malicious: true } },
+    { id: 'alert-1', type: 'alert', position: { x: 750, y: 350 }, data: { label: 'Credential Theft Detected', severity: 'Critical', time: '10m ago' } },
+    { id: 'domain-1', type: 'domain', position: { x: 50, y: 550 }, data: { label: 'evil-c2.ru', registrar: 'Unknown', malicious: true } },
   ];
 
   const edges = [
-    { id: 'e1', source: 'user-1', target: 'device-1', animated: true },
-    { id: 'e2', source: 'user-1', target: 'ip-1', animated: true, style: { stroke: '#ef4444' } },
-    { id: 'e3', source: 'device-1', target: 'alert-1' },
-    { id: 'e4', source: 'ip-1', target: 'alert-1', style: { stroke: '#ef4444' } },
-    { id: 'e5', source: 'device-1', target: 'ip-2' },
+    { id: 'e1', source: 'user-1', target: 'device-1', animated: true, style: { stroke: '#3b82f6' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' } },
+    { id: 'e2', source: 'user-1', target: 'device-2', style: { stroke: '#3b82f6' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' } },
+    { id: 'e3', source: 'device-1', target: 'ip-1', animated: true, style: { stroke: '#ef4444', strokeWidth: 2 }, label: 'C2 Connection', markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' } },
+    { id: 'e4', source: 'device-1', target: 'ip-2', style: { stroke: '#22c55e' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#22c55e' } },
+    { id: 'e5', source: 'device-1', target: 'process-1', animated: true, style: { stroke: '#f97316' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f97316' } },
+    { id: 'e6', source: 'process-1', target: 'file-1', style: { stroke: '#f97316' }, label: 'Downloaded', markerEnd: { type: MarkerType.ArrowClosed, color: '#f97316' } },
+    { id: 'e7', source: 'ip-1', target: 'domain-1', style: { stroke: '#ef4444' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' } },
+    { id: 'e8', source: 'device-2', target: 'alert-1', animated: true, style: { stroke: '#ef4444' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' } },
+    { id: 'e9', source: 'process-1', target: 'domain-1', animated: true, style: { stroke: '#ef4444', strokeDasharray: '5,5' }, label: 'DNS Query', markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' } },
   ];
 
   const events = [
-    { type: 'alert', title: 'Password Spray Alert Triggered', description: 'Multiple failed logins from suspicious IP', timestamp: new Date(Date.now() - 10 * 60000).toISOString() },
-    { type: 'action', title: 'Investigation Started', description: 'Auto-assigned to SOC queue', timestamp: new Date(Date.now() - 8 * 60000).toISOString() },
-    { type: 'system', title: 'Entity Enrichment', description: 'IP reputation lookup completed', timestamp: new Date(Date.now() - 5 * 60000).toISOString() },
+    { type: 'alert', title: 'Initial Phishing Email Received', description: 'User clicked malicious link in email', timestamp: new Date(Date.now() - 60 * 60000).toISOString() },
+    { type: 'system', title: 'Malicious Macro Executed', description: 'Word document macro triggered PowerShell', timestamp: new Date(Date.now() - 55 * 60000).toISOString() },
+    { type: 'alert', title: 'Suspicious Process Detected', description: 'Encoded PowerShell command executed', timestamp: new Date(Date.now() - 50 * 60000).toISOString() },
+    { type: 'system', title: 'C2 Connection Established', description: 'Outbound connection to 45.155.205.233', timestamp: new Date(Date.now() - 45 * 60000).toISOString() },
+    { type: 'alert', title: 'Credential Theft Detected', description: 'LSASS memory access detected', timestamp: new Date(Date.now() - 30 * 60000).toISOString() },
+    { type: 'action', title: 'Investigation Started', description: 'Incident assigned to SOC analyst', timestamp: new Date(Date.now() - 10 * 60000).toISOString() },
   ];
 
   return { nodes, edges, events };
@@ -456,13 +531,13 @@ const generateInvestigationData = () => {
 
 export default function Investigation() {
   const [searchParams] = useSearchParams();
-  const { selectedEntities } = useAppStore();
+  const { incidents } = useAppStore();
   
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [events, setEvents] = useState([]);
-  const [evidence, setEvidence] = useState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [showLegend, setShowLegend] = useState(true);
 
   // Initialize with sample data
   useEffect(() => {
@@ -470,106 +545,128 @@ export default function Investigation() {
     setNodes(data.nodes);
     setEdges(data.edges);
     setEvents(data.events);
-  }, []);
+  }, [setNodes, setEdges]);
 
   const onNodeClick = useCallback((_, node) => {
-    setSelectedNode(node);
+    setSelectedEntity(node);
   }, []);
 
-  const addEvidence = useCallback((item) => {
-    setEvidence(prev => [...prev, item]);
-    setEvents(prev => [...prev, {
-      type: 'action',
-      title: 'Evidence Added',
-      description: item.content.substring(0, 50) + '...',
-      timestamp: new Date().toISOString()
-    }]);
-  }, []);
-
-  const removeEvidence = useCallback((index) => {
-    setEvidence(prev => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const handleOSINTLookup = useCallback((result) => {
-    setEvents(prev => [...prev, {
-      type: 'action',
-      title: 'OSINT Lookup Completed',
-      description: `${result.ip || result.domain || result.hash}: ${result.reputation}`,
-      timestamp: new Date().toISOString()
-    }]);
-  }, []);
+  const onConnect = useCallback(
+    (params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
+    [setEdges]
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Eye className="w-8 h-8 text-cyan-500" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
+            <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-500" />
             Investigation Workbench
           </h1>
-          <p className="text-gray-400 mt-1">
-            Interactive entity graph with OSINT enrichment
+          <p className="text-gray-400 mt-1 text-sm">
+            Interactive entity graph • Click nodes to inspect • Drag to rearrange
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm">
-            <Download className="w-4 h-4" />
-            Export Report
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => setShowLegend(!showLegend)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
+              showLegend ? 'bg-cyber-500/20 text-cyber-400' : 'bg-dark-700 text-gray-400'
+            )}
+          >
+            <Filter className="w-4 h-4" />
+            <span className="hidden sm:inline">Legend</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyber-500 hover:bg-cyber-600 text-white text-sm">
+          <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm">
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export</span>
+          </button>
+          <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-cyber-500 text-white hover:bg-cyber-600 text-sm">
             <Flag className="w-4 h-4" />
-            Close Investigation
+            <span className="hidden sm:inline">Close Case</span>
           </button>
         </div>
       </div>
 
       {/* Main Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
         {/* Entity Graph */}
         <div className="xl:col-span-3">
-          <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden" style={{ height: '500px' }}>
-            <div className="p-3 border-b border-dark-700 flex items-center justify-between">
-              <h3 className="font-medium text-sm flex items-center gap-2">
-                <Activity className="w-4 h-4 text-cyber-500" />
-                Entity Relationship Graph
-              </h3>
-              <div className="flex items-center gap-2">
-                <button className="p-1.5 rounded hover:bg-dark-700" title="Add Entity">
-                  <Plus className="w-4 h-4" />
-                </button>
-                <button className="p-1.5 rounded hover:bg-dark-700" title="Refresh">
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+          <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden relative" style={{ height: '600px' }}>
+            {/* Legend overlay */}
+            <AnimatePresence>
+              {showLegend && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="absolute top-4 left-4 z-10"
+                >
+                  <LegendPanel />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <ReactFlow
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
               onNodeClick={onNodeClick}
               fitView
               className="bg-dark-900"
+              minZoom={0.3}
+              maxZoom={2}
             >
-              <Background color="#333" gap={16} />
-              <Controls className="bg-dark-800 border-dark-700" />
-              <MiniMap className="bg-dark-800" />
+              <Background color="#333" gap={20} size={1} />
+              <Controls className="bg-dark-800 border-dark-700 rounded-lg overflow-hidden" />
+              <MiniMap 
+                className="bg-dark-800 border border-dark-700 rounded-lg"
+                nodeColor={(node) => {
+                  if (node.type === 'user') return '#3b82f6';
+                  if (node.type === 'device') return '#a855f7';
+                  if (node.type === 'ip') return node.data?.reputation === 'malicious' ? '#ef4444' : '#22c55e';
+                  if (node.type === 'process') return '#06b6d4';
+                  if (node.type === 'alert') return '#f97316';
+                  return '#6b7280';
+                }}
+              />
             </ReactFlow>
           </div>
         </div>
 
         {/* Side Panels */}
         <div className="space-y-4">
-          <OSINTPanel 
-            selectedEntity={selectedNode?.data}
-            onLookup={handleOSINTLookup}
-          />
-          <EvidencePanel 
-            evidence={evidence}
-            onAdd={addEvidence}
-            onRemove={removeEvidence}
-          />
+          <AnimatePresence mode="wait">
+            {selectedEntity ? (
+              <EntityDetailsPanel
+                key="details"
+                entity={selectedEntity}
+                onClose={() => setSelectedEntity(null)}
+              />
+            ) : (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="bg-dark-800/50 rounded-xl border border-dark-700 p-8 text-center"
+              >
+                <Target className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+                <h3 className="font-medium text-gray-400">Select an Entity</h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  Click on any node to view details and perform OSINT lookups
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <TimelinePanel events={events} />
         </div>
       </div>

@@ -1,12 +1,12 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, Search, Clock, User, Target,
   ChevronRight, Shield, Activity, X,
-  CheckCircle, Users, Filter, Plus, MoreVertical,
+  CheckCircle, Users, Plus, MoreVertical,
   Eye, MessageSquare, Paperclip, Timer, Zap,
-  Trash2, RefreshCw, ExternalLink, Sparkles
+  Trash2, Sparkles, GripVertical
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { cn, formatRelativeTime, getSeverityBadge, getStatusColor, v4 as uuidv4 } from '../services/utils';
@@ -57,39 +57,75 @@ function SLATimer({ createdAt, slaMinutes, status }) {
   );
 }
 
-// Incident Card for Kanban
+// Incident Card for Kanban - Fixed drag behavior
 function IncidentCard({ incident, isHighlighted, onSelect, onAssign, onUpdateStatus }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const hasDragged = useRef(false);
+
+  const handleMouseDown = (e) => {
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    hasDragged.current = false;
+  };
+
+  const handleDragStart = (e) => {
+    setIsDragging(true);
+    hasDragged.current = true;
+    e.dataTransfer.setData('incidentId', incident.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleClick = (e) => {
+    // Only open modal if we didn't drag
+    if (!hasDragged.current) {
+      onSelect(incident);
+    }
+    hasDragged.current = false;
+  };
 
   return (
     <motion.div
       layout
       layoutId={incident.id}
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -2 }}
-      onClick={() => onSelect(incident)}
+      draggable
+      onMouseDown={handleMouseDown}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onClick={handleClick}
       className={cn(
-        "bg-dark-800 rounded-lg border p-3 cursor-pointer group relative",
-        "hover:border-cyber-500/50 transition-all",
+        "bg-dark-800 rounded-lg border p-3 cursor-grab active:cursor-grabbing group relative",
+        "hover:border-dark-600 transition-all select-none",
         isHighlighted && "ring-2 ring-cyber-500 ring-offset-2 ring-offset-dark-900",
+        isDragging && "opacity-50",
         incident.isFromSimulator && "border-l-4 border-l-cyber-500",
         incident.severity === 'Critical' && !incident.isFromSimulator && 'border-l-4 border-l-red-500 border-dark-700',
         incident.severity === 'High' && !incident.isFromSimulator && 'border-l-4 border-l-orange-500 border-dark-700',
         !incident.isFromSimulator && incident.severity !== 'Critical' && incident.severity !== 'High' && 'border-dark-700'
       )}
     >
+      {/* Drag handle indicator */}
+      <div className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 pointer-events-none">
+        <GripVertical className="w-4 h-4 text-gray-500" />
+      </div>
+
       {/* Simulator badge */}
       {incident.isFromSimulator && (
-        <div className="absolute -top-2 -right-2 bg-cyber-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+        <div className="absolute -top-2 -right-2 bg-cyber-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 z-10">
           <Sparkles className="w-2.5 h-2.5" />
           NEW
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 pl-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={cn("text-xs px-1.5 py-0.5 rounded font-medium", getSeverityBadge(incident.severity))}>
             {incident.severity}
@@ -111,22 +147,23 @@ function IncidentCard({ incident, isHighlighted, onSelect, onAssign, onUpdateSta
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="absolute right-0 top-6 z-20 w-44 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1"
+                onClick={(e) => e.stopPropagation()}
               >
                 <button 
-                  onClick={(e) => { e.stopPropagation(); onSelect(incident); setShowMenu(false); }}
+                  onClick={() => { onSelect(incident); setShowMenu(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 flex items-center gap-2"
                 >
                   <Eye className="w-4 h-4" /> View Details
                 </button>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); onAssign(incident); setShowMenu(false); }}
+                  onClick={() => { onAssign(incident); setShowMenu(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 flex items-center gap-2"
                 >
                   <User className="w-4 h-4" /> Assign
                 </button>
                 <div className="border-t border-dark-700 my-1" />
                 <button 
-                  onClick={(e) => { e.stopPropagation(); onUpdateStatus(incident.id, 'Resolved'); setShowMenu(false); }}
+                  onClick={() => { onUpdateStatus(incident.id, 'Resolved'); setShowMenu(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 flex items-center gap-2 text-green-400"
                 >
                   <CheckCircle className="w-4 h-4" /> Resolve
@@ -138,11 +175,11 @@ function IncidentCard({ incident, isHighlighted, onSelect, onAssign, onUpdateSta
       </div>
 
       {/* Title */}
-      <h4 className="font-medium text-sm mt-2 line-clamp-2">{incident.title}</h4>
+      <h4 className="font-medium text-sm mt-2 line-clamp-2 pl-3">{incident.title}</h4>
 
       {/* Techniques */}
       {incident.techniques?.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="flex flex-wrap gap-1 mt-2 pl-3">
           {incident.techniques.slice(0, 2).map(tech => (
             <span key={tech} className="text-[10px] px-1.5 py-0.5 rounded bg-dark-700 text-gray-400 font-mono">
               {tech}
@@ -157,7 +194,7 @@ function IncidentCard({ incident, isHighlighted, onSelect, onAssign, onUpdateSta
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-dark-700">
+      <div className="flex items-center justify-between mt-3 pt-2 border-t border-dark-700 pl-3">
         <div className="flex items-center gap-3 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
@@ -189,7 +226,7 @@ function IncidentCard({ incident, isHighlighted, onSelect, onAssign, onUpdateSta
       </div>
 
       {/* Time */}
-      <p className="text-[10px] text-gray-600 mt-2">{formatRelativeTime(incident.createdAt)}</p>
+      <p className="text-[10px] text-gray-600 mt-2 pl-3">{formatRelativeTime(incident.createdAt)}</p>
     </motion.div>
   );
 }
@@ -201,10 +238,16 @@ function KanbanColumn({ column, incidents, highlightedId, onSelect, onAssign, on
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     setIsDragOver(true);
   };
 
-  const handleDragLeave = () => setIsDragOver(false);
+  const handleDragLeave = (e) => {
+    // Only set drag over to false if we're actually leaving the column
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -218,8 +261,8 @@ function KanbanColumn({ column, incidents, highlightedId, onSelect, onAssign, on
   return (
     <div 
       className={cn(
-        "flex flex-col min-w-[280px] sm:min-w-[300px] lg:min-w-[320px] bg-dark-900/50 rounded-xl border transition-colors flex-shrink-0",
-        isDragOver ? 'border-cyber-500 bg-cyber-500/5' : 'border-dark-700'
+        "flex flex-col min-w-[280px] sm:min-w-[300px] lg:min-w-[320px] bg-dark-900/50 rounded-xl border transition-all flex-shrink-0",
+        isDragOver ? 'border-cyber-500 bg-cyber-500/5 scale-[1.02]' : 'border-dark-700'
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -241,27 +284,29 @@ function KanbanColumn({ column, incidents, highlightedId, onSelect, onAssign, on
         </div>
       </div>
 
+      {/* Drop zone indicator */}
+      {isDragOver && (
+        <div className="mx-2 mt-2 p-3 border-2 border-dashed border-cyber-500/50 rounded-lg bg-cyber-500/5 text-center">
+          <p className="text-xs text-cyber-400">Drop here to move to {column.title}</p>
+        </div>
+      )}
+
       {/* Cards */}
       <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-380px)] min-h-[200px]">
         <AnimatePresence mode="popLayout">
           {incidents.map((incident) => (
-            <div
+            <IncidentCard
               key={incident.id}
-              draggable
-              onDragStart={(e) => e.dataTransfer.setData('incidentId', incident.id)}
-            >
-              <IncidentCard
-                incident={incident}
-                isHighlighted={incident.id === highlightedId}
-                onSelect={onSelect}
-                onAssign={onAssign}
-                onUpdateStatus={onUpdateStatus}
-              />
-            </div>
+              incident={incident}
+              isHighlighted={incident.id === highlightedId}
+              onSelect={onSelect}
+              onAssign={onAssign}
+              onUpdateStatus={onUpdateStatus}
+            />
           ))}
         </AnimatePresence>
         
-        {incidents.length === 0 && (
+        {incidents.length === 0 && !isDragOver && (
           <div className="flex flex-col items-center justify-center h-32 text-gray-600">
             <Icon className="w-6 h-6 mb-2 opacity-50" />
             <p className="text-xs">No incidents</p>
@@ -500,7 +545,7 @@ export default function Incidents() {
   const navigate = useNavigate();
   const { incidentId } = useParams();
   const [searchParams] = useSearchParams();
-  const { incidents, updateIncident, removeIncident, clearSimulatorIncidents } = useAppStore();
+  const { incidents, updateIncident, clearSimulatorIncidents } = useAppStore();
   
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -512,17 +557,11 @@ export default function Incidents() {
     const incId = incidentId || searchParams.get('highlight');
     if (incId) {
       setHighlightedId(incId);
-      const incident = incidents.find(inc => inc.id === incId);
-      if (incident) {
-        setSelectedIncident(incident);
-        // Scroll to the incident after a short delay
-        setTimeout(() => {
-          const element = document.querySelector(`[data-incident-id="${incId}"]`);
-          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-      }
+      // Auto-clear highlight after 5 seconds
+      const timeout = setTimeout(() => setHighlightedId(null), 5000);
+      return () => clearTimeout(timeout);
     }
-  }, [incidentId, searchParams, incidents]);
+  }, [incidentId, searchParams]);
 
   // Filter incidents
   const filteredIncidents = useMemo(() => {
@@ -609,7 +648,7 @@ export default function Incidents() {
             Incident Management
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
-            Drag and drop to update status • {incidents.length} total incidents
+            Drag cards to change status • {incidents.length} total
           </p>
         </div>
 
@@ -648,7 +687,7 @@ export default function Incidents() {
         </div>
         <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
           <p className="text-2xl sm:text-3xl font-bold text-cyan-400">{stats.fromSimulator}</p>
-          <p className="text-xs sm:text-sm text-gray-400">From Simulator</p>
+          <p className="text-xs sm:text-sm text-gray-400">Simulated</p>
         </div>
         <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
           <p className="text-2xl sm:text-3xl font-bold text-orange-400">{stats.breached}</p>
@@ -662,7 +701,7 @@ export default function Incidents() {
           <AlertTriangle className="w-12 h-12 mx-auto text-gray-600 mb-4" />
           <h3 className="text-lg font-medium text-gray-400">No Incidents Yet</h3>
           <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
-            Run an attack simulation to generate incidents, or they will appear here when detected by your detection rules.
+            Run an attack simulation to generate incidents.
           </p>
           <Link
             to="/simulator"
@@ -697,10 +736,7 @@ export default function Incidents() {
         {selectedIncident && (
           <IncidentDetail
             incident={selectedIncident}
-            onClose={() => {
-              setSelectedIncident(null);
-              setHighlightedId(null);
-            }}
+            onClose={() => setSelectedIncident(null)}
             onUpdateStatus={handleUpdateStatus}
             onNavigateToInvestigation={handleNavigateToInvestigation}
           />
