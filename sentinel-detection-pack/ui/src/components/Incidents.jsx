@@ -1,22 +1,23 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, Search, Clock, User, Target,
-  ChevronRight, ChevronDown, Shield, Activity, X,
+  ChevronRight, Shield, Activity, X,
   CheckCircle, Users, Filter, Plus, MoreVertical,
-  GripVertical, Eye, MessageSquare, Paperclip, Timer
+  Eye, MessageSquare, Paperclip, Timer, Zap,
+  Trash2, RefreshCw, ExternalLink, Sparkles
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { cn, formatRelativeTime, getSeverityBadge, getStatusColor, v4 as uuidv4 } from '../services/utils';
 
 // Kanban columns configuration
 const KANBAN_COLUMNS = [
-  { id: 'New', title: 'New', color: 'cyan', icon: AlertTriangle },
-  { id: 'Triage', title: 'Triage', color: 'yellow', icon: Eye },
-  { id: 'Investigating', title: 'Investigating', color: 'orange', icon: Search },
-  { id: 'Contained', title: 'Contained', color: 'purple', icon: Shield },
-  { id: 'Resolved', title: 'Resolved', color: 'green', icon: CheckCircle },
+  { id: 'New', title: 'New', color: 'cyan', icon: AlertTriangle, bgClass: 'bg-cyan-500/10', borderClass: 'border-cyan-500/30' },
+  { id: 'Triage', title: 'Triage', color: 'yellow', icon: Eye, bgClass: 'bg-yellow-500/10', borderClass: 'border-yellow-500/30' },
+  { id: 'Investigating', title: 'Investigating', color: 'orange', icon: Search, bgClass: 'bg-orange-500/10', borderClass: 'border-orange-500/30' },
+  { id: 'Contained', title: 'Contained', color: 'purple', icon: Shield, bgClass: 'bg-purple-500/10', borderClass: 'border-purple-500/30' },
+  { id: 'Resolved', title: 'Resolved', color: 'green', icon: CheckCircle, bgClass: 'bg-green-500/10', borderClass: 'border-green-500/30' },
 ];
 
 // Sample analysts
@@ -27,136 +28,26 @@ const ANALYSTS = [
   { id: 'analyst-4', name: 'Emma Wilson', avatar: 'EW', color: 'bg-orange-500' },
 ];
 
-// Generate sample incidents
-const generateSampleIncidents = () => [
-  {
-    id: uuidv4(),
-    title: 'Password Spray Attack from TOR Exit Node',
-    description: 'Multiple failed authentication attempts from known TOR exit node targeting 15 accounts',
-    severity: 'Critical',
-    status: 'New',
-    createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
-    assignee: null,
-    tactics: ['Credential Access', 'Initial Access'],
-    techniques: ['T1110.003'],
-    entities: { users: 15, ips: 1, devices: 0 },
-    alertCount: 45,
-    comments: 2,
-    attachments: 1,
-    slaMinutes: 60,
-  },
-  {
-    id: uuidv4(),
-    title: 'Suspicious Service Principal Activity',
-    description: 'New service principal created with credential addition within 5 minutes',
-    severity: 'High',
-    status: 'Triage',
-    createdAt: new Date(Date.now() - 2 * 60 * 60000).toISOString(),
-    assignee: ANALYSTS[0],
-    tactics: ['Persistence', 'Privilege Escalation'],
-    techniques: ['T1136.003'],
-    entities: { users: 1, ips: 2, devices: 0 },
-    alertCount: 3,
-    comments: 5,
-    attachments: 2,
-    slaMinutes: 120,
-  },
-  {
-    id: uuidv4(),
-    title: 'Potential Data Exfiltration',
-    description: 'Unusual outbound data volume (175MB) to rare external destination',
-    severity: 'Critical',
-    status: 'Investigating',
-    createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
-    assignee: ANALYSTS[1],
-    tactics: ['Exfiltration'],
-    techniques: ['T1041'],
-    entities: { users: 0, ips: 2, devices: 1 },
-    alertCount: 2,
-    comments: 8,
-    attachments: 3,
-    slaMinutes: 30,
-  },
-  {
-    id: uuidv4(),
-    title: 'LSASS Memory Access Detected',
-    description: 'Credential dumping attempt using procdump.exe on WORKSTATION-01',
-    severity: 'Critical',
-    status: 'Contained',
-    createdAt: new Date(Date.now() - 4 * 60 * 60000).toISOString(),
-    assignee: ANALYSTS[0],
-    tactics: ['Credential Access'],
-    techniques: ['T1003.001'],
-    entities: { users: 1, ips: 0, devices: 1 },
-    alertCount: 5,
-    comments: 12,
-    attachments: 4,
-    slaMinutes: 30,
-  },
-  {
-    id: uuidv4(),
-    title: 'MFA Fatigue Attack',
-    description: 'Multiple MFA denials (12) for erin@contoso.com from suspicious IP',
-    severity: 'High',
-    status: 'New',
-    createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
-    assignee: null,
-    tactics: ['Credential Access'],
-    techniques: ['T1621'],
-    entities: { users: 1, ips: 1, devices: 0 },
-    alertCount: 12,
-    comments: 0,
-    attachments: 0,
-    slaMinutes: 45,
-  },
-  {
-    id: uuidv4(),
-    title: 'Suspicious Inbox Forwarding Rule',
-    description: 'New inbox rule created forwarding all email to external domain',
-    severity: 'High',
-    status: 'Investigating',
-    createdAt: new Date(Date.now() - 3 * 60 * 60000).toISOString(),
-    assignee: ANALYSTS[2],
-    tactics: ['Collection'],
-    techniques: ['T1114.003'],
-    entities: { users: 1, ips: 1, devices: 0 },
-    alertCount: 1,
-    comments: 4,
-    attachments: 1,
-    slaMinutes: 60,
-  },
-  {
-    id: uuidv4(),
-    title: 'Encoded PowerShell Execution',
-    description: 'Base64 encoded PowerShell with download cradle detected',
-    severity: 'High',
-    status: 'Resolved',
-    createdAt: new Date(Date.now() - 24 * 60 * 60000).toISOString(),
-    assignee: ANALYSTS[3],
-    tactics: ['Execution'],
-    techniques: ['T1059.001'],
-    entities: { users: 1, ips: 0, devices: 1 },
-    alertCount: 3,
-    comments: 15,
-    attachments: 6,
-    slaMinutes: 45,
-  },
-];
-
 // SLA Timer Component
 function SLATimer({ createdAt, slaMinutes, status }) {
-  const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
-  const remaining = slaMinutes - elapsed;
-  const percentage = Math.min((elapsed / slaMinutes) * 100, 100);
-  const isBreached = remaining <= 0;
-  const isWarning = remaining > 0 && remaining <= slaMinutes * 0.25;
+  const [, setTick] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (status === 'Resolved') return null;
 
+  const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+  const remaining = slaMinutes - elapsed;
+  const isBreached = remaining <= 0;
+  const isWarning = remaining > 0 && remaining <= slaMinutes * 0.25;
+
   return (
     <div className={cn(
-      "flex items-center gap-1 text-xs px-2 py-0.5 rounded-full",
-      isBreached ? 'bg-red-500/20 text-red-400' :
+      "flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium",
+      isBreached ? 'bg-red-500/20 text-red-400 animate-pulse' :
       isWarning ? 'bg-yellow-500/20 text-yellow-400' :
       'bg-dark-700 text-gray-400'
     )}>
@@ -167,7 +58,7 @@ function SLATimer({ createdAt, slaMinutes, status }) {
 }
 
 // Incident Card for Kanban
-function IncidentCard({ incident, onSelect, onAssign }) {
+function IncidentCard({ incident, isHighlighted, onSelect, onAssign, onUpdateStatus }) {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -180,17 +71,27 @@ function IncidentCard({ incident, onSelect, onAssign }) {
       whileHover={{ y: -2 }}
       onClick={() => onSelect(incident)}
       className={cn(
-        "bg-dark-800 rounded-lg border p-3 cursor-pointer group",
+        "bg-dark-800 rounded-lg border p-3 cursor-pointer group relative",
         "hover:border-cyber-500/50 transition-all",
-        incident.severity === 'Critical' ? 'border-l-4 border-l-red-500 border-dark-700' :
-        incident.severity === 'High' ? 'border-l-4 border-l-orange-500 border-dark-700' :
-        'border-dark-700'
+        isHighlighted && "ring-2 ring-cyber-500 ring-offset-2 ring-offset-dark-900",
+        incident.isFromSimulator && "border-l-4 border-l-cyber-500",
+        incident.severity === 'Critical' && !incident.isFromSimulator && 'border-l-4 border-l-red-500 border-dark-700',
+        incident.severity === 'High' && !incident.isFromSimulator && 'border-l-4 border-l-orange-500 border-dark-700',
+        !incident.isFromSimulator && incident.severity !== 'Critical' && incident.severity !== 'High' && 'border-dark-700'
       )}
     >
+      {/* Simulator badge */}
+      {incident.isFromSimulator && (
+        <div className="absolute -top-2 -right-2 bg-cyber-500 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+          <Sparkles className="w-2.5 h-2.5" />
+          NEW
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className={cn("text-xs px-1.5 py-0.5 rounded", getSeverityBadge(incident.severity))}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={cn("text-xs px-1.5 py-0.5 rounded font-medium", getSeverityBadge(incident.severity))}>
             {incident.severity}
           </span>
           <SLATimer createdAt={incident.createdAt} slaMinutes={incident.slaMinutes} status={incident.status} />
@@ -203,13 +104,36 @@ function IncidentCard({ incident, onSelect, onAssign }) {
             <MoreVertical className="w-4 h-4" />
           </button>
           
-          {showMenu && (
-            <div className="absolute right-0 top-6 z-10 w-40 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1">
-              <button className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700">View Details</button>
-              <button className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700">Assign</button>
-              <button className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 text-red-400">Close</button>
-            </div>
-          )}
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute right-0 top-6 z-20 w-44 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1"
+              >
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onSelect(incident); setShowMenu(false); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" /> View Details
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onAssign(incident); setShowMenu(false); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 flex items-center gap-2"
+                >
+                  <User className="w-4 h-4" /> Assign
+                </button>
+                <div className="border-t border-dark-700 my-1" />
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onUpdateStatus(incident.id, 'Resolved'); setShowMenu(false); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-dark-700 flex items-center gap-2 text-green-400"
+                >
+                  <CheckCircle className="w-4 h-4" /> Resolve
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -217,29 +141,32 @@ function IncidentCard({ incident, onSelect, onAssign }) {
       <h4 className="font-medium text-sm mt-2 line-clamp-2">{incident.title}</h4>
 
       {/* Techniques */}
-      <div className="flex flex-wrap gap-1 mt-2">
-        {incident.techniques.map(tech => (
-          <span key={tech} className="text-[10px] px-1.5 py-0.5 rounded bg-dark-700 text-gray-400 font-mono">
-            {tech}
-          </span>
-        ))}
-      </div>
+      {incident.techniques?.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {incident.techniques.slice(0, 2).map(tech => (
+            <span key={tech} className="text-[10px] px-1.5 py-0.5 rounded bg-dark-700 text-gray-400 font-mono">
+              {tech}
+            </span>
+          ))}
+          {incident.techniques.length > 2 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-700 text-gray-500">
+              +{incident.techniques.length - 2}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-dark-700">
         <div className="flex items-center gap-3 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
-            {incident.alertCount}
+            {incident.alertCount || 1}
           </span>
-          <span className="flex items-center gap-1">
-            <MessageSquare className="w-3 h-3" />
-            {incident.comments}
-          </span>
-          {incident.attachments > 0 && (
+          {incident.comments > 0 && (
             <span className="flex items-center gap-1">
-              <Paperclip className="w-3 h-3" />
-              {incident.attachments}
+              <MessageSquare className="w-3 h-3" />
+              {incident.comments}
             </span>
           )}
         </div>
@@ -268,7 +195,7 @@ function IncidentCard({ incident, onSelect, onAssign }) {
 }
 
 // Kanban Column
-function KanbanColumn({ column, incidents, onSelect, onAssign, onDrop }) {
+function KanbanColumn({ column, incidents, highlightedId, onSelect, onAssign, onDrop, onUpdateStatus }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const Icon = column.icon;
 
@@ -291,7 +218,7 @@ function KanbanColumn({ column, incidents, onSelect, onAssign, onDrop }) {
   return (
     <div 
       className={cn(
-        "flex flex-col min-w-[300px] max-w-[350px] bg-dark-900/50 rounded-xl border transition-colors",
+        "flex flex-col min-w-[280px] sm:min-w-[300px] lg:min-w-[320px] bg-dark-900/50 rounded-xl border transition-colors flex-shrink-0",
         isDragOver ? 'border-cyber-500 bg-cyber-500/5' : 'border-dark-700'
       )}
       onDragOver={handleDragOver}
@@ -299,13 +226,13 @@ function KanbanColumn({ column, incidents, onSelect, onAssign, onDrop }) {
       onDrop={handleDrop}
     >
       {/* Column Header */}
-      <div className="p-3 border-b border-dark-700">
+      <div className={cn("p-3 border-b rounded-t-xl", column.borderClass, column.bgClass)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon className={cn("w-4 h-4", `text-${column.color}-500`)} />
-            <h3 className="font-medium">{column.title}</h3>
+            <h3 className="font-medium text-sm">{column.title}</h3>
             <span className={cn(
-              "text-xs px-2 py-0.5 rounded-full",
+              "text-xs px-2 py-0.5 rounded-full font-medium",
               `bg-${column.color}-500/20 text-${column.color}-400`
             )}>
               {incidents.length}
@@ -315,7 +242,7 @@ function KanbanColumn({ column, incidents, onSelect, onAssign, onDrop }) {
       </div>
 
       {/* Cards */}
-      <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-300px)]">
+      <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-380px)] min-h-[200px]">
         <AnimatePresence mode="popLayout">
           {incidents.map((incident) => (
             <div
@@ -325,8 +252,10 @@ function KanbanColumn({ column, incidents, onSelect, onAssign, onDrop }) {
             >
               <IncidentCard
                 incident={incident}
+                isHighlighted={incident.id === highlightedId}
                 onSelect={onSelect}
                 onAssign={onAssign}
+                onUpdateStatus={onUpdateStatus}
               />
             </div>
           ))}
@@ -344,7 +273,7 @@ function KanbanColumn({ column, incidents, onSelect, onAssign, onDrop }) {
 }
 
 // Incident Detail Modal
-function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
+function IncidentDetail({ incident, onClose, onUpdateStatus, onNavigateToInvestigation }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   if (!incident) return null;
@@ -354,7 +283,7 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
@@ -365,9 +294,9 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
         className="w-full max-w-3xl max-h-[90vh] overflow-hidden bg-dark-800 rounded-xl border border-dark-700 shadow-2xl"
       >
         {/* Header */}
-        <div className="p-6 border-b border-dark-700">
-          <div className="flex items-start justify-between">
-            <div>
+        <div className="p-4 sm:p-6 border-b border-dark-700">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={cn("text-xs px-2 py-1 rounded-full", getSeverityBadge(incident.severity))}>
                   {incident.severity}
@@ -375,28 +304,31 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
                 <span className={cn("text-xs px-2 py-1 rounded-full", getStatusColor(incident.status))}>
                   {incident.status}
                 </span>
-                {incident.techniques.map(tech => (
-                  <span key={tech} className="text-xs px-2 py-1 rounded bg-dark-700 font-mono">{tech}</span>
-                ))}
+                {incident.isFromSimulator && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-cyber-500/20 text-cyber-400 flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    Simulated
+                  </span>
+                )}
               </div>
-              <h2 className="text-xl font-bold mt-3">{incident.title}</h2>
-              <p className="text-gray-400 mt-2">{incident.description}</p>
+              <h2 className="text-lg sm:text-xl font-bold mt-3 line-clamp-2">{incident.title}</h2>
+              <p className="text-gray-400 mt-2 text-sm line-clamp-2">{incident.description}</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-dark-700 rounded-lg">
+            <button onClick={onClose} className="p-2 hover:bg-dark-700 rounded-lg flex-shrink-0">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Status Actions */}
-        <div className="px-6 py-3 border-b border-dark-700 flex items-center gap-2 overflow-x-auto">
-          <span className="text-sm text-gray-400 mr-2">Move to:</span>
+        <div className="px-4 sm:px-6 py-3 border-b border-dark-700 flex items-center gap-2 overflow-x-auto">
+          <span className="text-sm text-gray-400 mr-2 flex-shrink-0">Move to:</span>
           {KANBAN_COLUMNS.map(col => (
             <button
               key={col.id}
               onClick={() => onUpdateStatus(incident.id, col.id)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap",
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0",
                 incident.status === col.id
                   ? `bg-${col.color}-500 text-white`
                   : 'bg-dark-700 hover:bg-dark-600'
@@ -408,14 +340,14 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
         </div>
 
         {/* Tabs */}
-        <div className="px-6 pt-4 border-b border-dark-700">
+        <div className="px-4 sm:px-6 pt-4 border-b border-dark-700 overflow-x-auto">
           <div className="flex gap-4">
             {['overview', 'timeline', 'entities', 'evidence'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "pb-3 text-sm font-medium border-b-2 transition-colors capitalize",
+                  "pb-3 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap",
                   activeTab === tab
                     ? 'border-cyber-500 text-cyber-400'
                     : 'border-transparent text-gray-500 hover:text-gray-300'
@@ -428,47 +360,85 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
         </div>
 
         {/* Content */}
-        <div className="p-6 max-h-[400px] overflow-y-auto">
+        <div className="p-4 sm:p-6 max-h-[300px] sm:max-h-[400px] overflow-y-auto">
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <h4 className="text-xs text-gray-500 uppercase mb-2">Details</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Created</span>
                     <span>{formatRelativeTime(incident.createdAt)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Assignee</span>
                     <span>{incident.assignee?.name || 'Unassigned'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Alert Count</span>
-                    <span>{incident.alertCount}</span>
+                    <span>{incident.alertCount || 1}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Tactics</span>
-                    <span>{incident.tactics.join(', ')}</span>
-                  </div>
+                  {incident.tactics && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Tactics</span>
+                      <span className="text-right">{incident.tactics.join(', ')}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
                 <h4 className="text-xs text-gray-500 uppercase mb-2">Entities</h4>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-lg bg-dark-700/50 text-center">
-                    <p className="text-xl font-bold">{incident.entities.users}</p>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 rounded-lg bg-dark-700/50 text-center">
+                    <p className="text-lg sm:text-xl font-bold">{incident.entities?.users || 0}</p>
                     <p className="text-xs text-gray-500">Users</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-dark-700/50 text-center">
-                    <p className="text-xl font-bold">{incident.entities.ips}</p>
+                  <div className="p-2 sm:p-3 rounded-lg bg-dark-700/50 text-center">
+                    <p className="text-lg sm:text-xl font-bold">{incident.entities?.ips || 0}</p>
                     <p className="text-xs text-gray-500">IPs</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-dark-700/50 text-center">
-                    <p className="text-xl font-bold">{incident.entities.devices}</p>
+                  <div className="p-2 sm:p-3 rounded-lg bg-dark-700/50 text-center">
+                    <p className="text-lg sm:text-xl font-bold">{incident.entities?.devices || 0}</p>
                     <p className="text-xs text-gray-500">Devices</p>
                   </div>
                 </div>
               </div>
+
+              {/* IOCs from simulator */}
+              {incident.iocs && (
+                <div className="sm:col-span-2">
+                  <h4 className="text-xs text-gray-500 uppercase mb-2">Indicators of Compromise</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {incident.iocs.ips?.map(ip => (
+                      <code key={ip} className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 font-mono">
+                        {ip}
+                      </code>
+                    ))}
+                    {incident.iocs.techniques?.map(tech => (
+                      <code key={tech} className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">
+                        {tech}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Remediation steps */}
+              {incident.remediation && (
+                <div className="sm:col-span-2">
+                  <h4 className="text-xs text-gray-500 uppercase mb-2">Remediation Steps</h4>
+                  <ol className="space-y-1">
+                    {incident.remediation.map((step, i) => (
+                      <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-xs flex items-center justify-center flex-shrink-0">
+                          {i + 1}
+                        </span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
             </div>
           )}
 
@@ -480,9 +450,9 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
                 { time: new Date(new Date(incident.createdAt).getTime() + 10 * 60000).toISOString(), action: 'Enrichment completed', actor: 'System' },
               ].map((event, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-cyber-500 mt-2" />
+                  <div className="w-2 h-2 rounded-full bg-cyber-500 mt-2 flex-shrink-0" />
                   <div>
-                    <p className="font-medium">{event.action}</p>
+                    <p className="font-medium text-sm">{event.action}</p>
                     <p className="text-xs text-gray-500">{event.actor} • {formatRelativeTime(event.time)}</p>
                   </div>
                 </div>
@@ -493,27 +463,27 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
           {activeTab === 'entities' && (
             <div className="text-center py-8 text-gray-500">
               <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>Entity details would appear here</p>
+              <p>Entity details available in Investigation</p>
             </div>
           )}
 
           {activeTab === 'evidence' && (
             <div className="text-center py-8 text-gray-500">
               <Paperclip className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>Evidence and attachments would appear here</p>
+              <p>Evidence and attachments</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-dark-700 flex justify-between">
-          <Link
-            to={`/investigation?incident=${incident.id}`}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyber-500/20 text-cyber-400 hover:bg-cyber-500/30 text-sm font-medium"
+        <div className="px-4 sm:px-6 py-4 border-t border-dark-700 flex flex-col sm:flex-row gap-2 sm:justify-between">
+          <button
+            onClick={() => onNavigateToInvestigation(incident)}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-cyber-500/20 text-cyber-400 hover:bg-cyber-500/30 text-sm font-medium"
           >
             <Eye className="w-4 h-4" />
             Open Investigation
-          </Link>
+          </button>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm"
@@ -527,67 +497,90 @@ function IncidentDetail({ incident, onClose, onUpdateStatus, analysts }) {
 }
 
 export default function Incidents() {
-  const { incidents: storeIncidents, updateIncident, addIncident } = useAppStore();
-  const [localIncidents, setLocalIncidents] = useState(generateSampleIncidents);
+  const navigate = useNavigate();
+  const { incidentId } = useParams();
+  const [searchParams] = useSearchParams();
+  const { incidents, updateIncident, removeIncident, clearSimulatorIncidents } = useAppStore();
+  
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [assignModal, setAssignModal] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
 
-  // Combine store and local incidents
-  const allIncidents = useMemo(() => {
-    const combined = [...storeIncidents, ...localIncidents];
-    if (!searchQuery) return combined;
-    return combined.filter(inc =>
-      inc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inc.description.toLowerCase().includes(searchQuery.toLowerCase())
+  // Highlight incident from URL or navigation
+  useEffect(() => {
+    const incId = incidentId || searchParams.get('highlight');
+    if (incId) {
+      setHighlightedId(incId);
+      const incident = incidents.find(inc => inc.id === incId);
+      if (incident) {
+        setSelectedIncident(incident);
+        // Scroll to the incident after a short delay
+        setTimeout(() => {
+          const element = document.querySelector(`[data-incident-id="${incId}"]`);
+          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+  }, [incidentId, searchParams, incidents]);
+
+  // Filter incidents
+  const filteredIncidents = useMemo(() => {
+    if (!searchQuery) return incidents;
+    const query = searchQuery.toLowerCase();
+    return incidents.filter(inc =>
+      inc.title.toLowerCase().includes(query) ||
+      inc.description?.toLowerCase().includes(query) ||
+      inc.techniques?.some(t => t.toLowerCase().includes(query))
     );
-  }, [storeIncidents, localIncidents, searchQuery]);
+  }, [incidents, searchQuery]);
 
   // Group by status
   const incidentsByStatus = useMemo(() => {
     const grouped = {};
     KANBAN_COLUMNS.forEach(col => { grouped[col.id] = []; });
-    allIncidents.forEach(inc => {
-      if (grouped[inc.status]) {
-        grouped[inc.status].push(inc);
+    
+    filteredIncidents.forEach(inc => {
+      const status = inc.status || 'New';
+      if (grouped[status]) {
+        grouped[status].push(inc);
       } else {
         grouped['New'].push(inc);
       }
     });
-    // Sort by severity within each column
+    
+    // Sort by severity and time within each column
     Object.keys(grouped).forEach(status => {
       grouped[status].sort((a, b) => {
         const order = { Critical: 0, High: 1, Medium: 2, Low: 3 };
-        return (order[a.severity] || 4) - (order[b.severity] || 4);
+        const severityDiff = (order[a.severity] || 4) - (order[b.severity] || 4);
+        if (severityDiff !== 0) return severityDiff;
+        return new Date(b.createdAt) - new Date(a.createdAt);
       });
     });
+    
     return grouped;
-  }, [allIncidents]);
+  }, [filteredIncidents]);
 
   // Stats
   const stats = useMemo(() => ({
-    total: allIncidents.length,
-    critical: allIncidents.filter(i => i.severity === 'Critical').length,
-    unassigned: allIncidents.filter(i => !i.assignee).length,
-    breached: allIncidents.filter(i => {
+    total: incidents.length,
+    critical: incidents.filter(i => i.severity === 'Critical').length,
+    unassigned: incidents.filter(i => !i.assignee).length,
+    fromSimulator: incidents.filter(i => i.isFromSimulator).length,
+    breached: incidents.filter(i => {
       const elapsed = (Date.now() - new Date(i.createdAt).getTime()) / 60000;
-      return elapsed > i.slaMinutes && i.status !== 'Resolved';
+      return elapsed > (i.slaMinutes || 60) && i.status !== 'Resolved';
     }).length,
-  }), [allIncidents]);
+  }), [incidents]);
 
   const handleDrop = useCallback((incidentId, newStatus) => {
-    setLocalIncidents(prev => prev.map(inc =>
-      inc.id === incidentId ? { ...inc, status: newStatus } : inc
-    ));
     updateIncident(incidentId, { status: newStatus });
   }, [updateIncident]);
 
   const handleUpdateStatus = useCallback((incidentId, newStatus) => {
-    setLocalIncidents(prev => prev.map(inc =>
-      inc.id === incidentId ? { ...inc, status: newStatus } : inc
-    ));
     updateIncident(incidentId, { status: newStatus });
-    setSelectedIncident(prev => prev ? { ...prev, status: newStatus } : null);
+    setSelectedIncident(prev => prev?.id === incidentId ? { ...prev, status: newStatus } : prev);
   }, [updateIncident]);
 
   const handleAssign = useCallback((incident) => {
@@ -596,83 +589,120 @@ export default function Incidents() {
 
   const confirmAssign = useCallback((analyst) => {
     if (assignModal) {
-      setLocalIncidents(prev => prev.map(inc =>
-        inc.id === assignModal.id ? { ...inc, assignee: analyst } : inc
-      ));
+      updateIncident(assignModal.id, { assignee: analyst });
       setAssignModal(null);
     }
-  }, [assignModal]);
+  }, [assignModal, updateIncident]);
+
+  const handleNavigateToInvestigation = useCallback((incident) => {
+    setSelectedIncident(null);
+    navigate(`/investigation?incident=${incident.id}`);
+  }, [navigate]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-orange-500" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-3">
+            <AlertTriangle className="w-6 sm:w-8 h-6 sm:h-8 text-orange-500" />
             Incident Management
           </h1>
-          <p className="text-gray-400 mt-1">
-            Drag and drop incidents to update status • SOC Kanban Board
+          <p className="text-gray-400 mt-1 text-sm">
+            Drag and drop to update status • {incidents.length} total incidents
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Search incidents..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-lg bg-dark-800 border border-dark-700 focus:border-cyber-500 outline-none text-sm w-64"
+              className="w-full sm:w-56 pl-9 pr-4 py-2 rounded-lg bg-dark-800 border border-dark-700 focus:border-cyber-500 outline-none text-sm"
             />
           </div>
+          {stats.fromSimulator > 0 && (
+            <button
+              onClick={() => clearSimulatorIncidents()}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm text-gray-400"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Clear Simulated</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-          <p className="text-3xl font-bold">{stats.total}</p>
-          <p className="text-sm text-gray-400">Total Incidents</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+          <p className="text-2xl sm:text-3xl font-bold">{stats.total}</p>
+          <p className="text-xs sm:text-sm text-gray-400">Total</p>
         </div>
-        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-          <p className="text-3xl font-bold text-red-400">{stats.critical}</p>
-          <p className="text-sm text-gray-400">Critical</p>
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+          <p className="text-2xl sm:text-3xl font-bold text-red-400">{stats.critical}</p>
+          <p className="text-xs sm:text-sm text-gray-400">Critical</p>
         </div>
-        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-          <p className="text-3xl font-bold text-yellow-400">{stats.unassigned}</p>
-          <p className="text-sm text-gray-400">Unassigned</p>
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+          <p className="text-2xl sm:text-3xl font-bold text-cyan-400">{stats.fromSimulator}</p>
+          <p className="text-xs sm:text-sm text-gray-400">From Simulator</p>
         </div>
-        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-          <p className="text-3xl font-bold text-orange-400">{stats.breached}</p>
-          <p className="text-sm text-gray-400">SLA Breached</p>
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+          <p className="text-2xl sm:text-3xl font-bold text-orange-400">{stats.breached}</p>
+          <p className="text-xs sm:text-sm text-gray-400">SLA Breached</p>
         </div>
       </div>
 
+      {/* Empty State */}
+      {incidents.length === 0 && (
+        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-8 sm:p-12 text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-gray-400">No Incidents Yet</h3>
+          <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+            Run an attack simulation to generate incidents, or they will appear here when detected by your detection rules.
+          </p>
+          <Link
+            to="/simulator"
+            className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-lg bg-cyber-500 text-white font-medium hover:bg-cyber-600 transition-colors"
+          >
+            <Zap className="w-5 h-5" />
+            Launch Attack Simulator
+          </Link>
+        </div>
+      )}
+
       {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {KANBAN_COLUMNS.map(column => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            incidents={incidentsByStatus[column.id] || []}
-            onSelect={setSelectedIncident}
-            onAssign={handleAssign}
-            onDrop={handleDrop}
-          />
-        ))}
-      </div>
+      {incidents.length > 0 && (
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          {KANBAN_COLUMNS.map(column => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              incidents={incidentsByStatus[column.id] || []}
+              highlightedId={highlightedId}
+              onSelect={setSelectedIncident}
+              onAssign={handleAssign}
+              onDrop={handleDrop}
+              onUpdateStatus={handleUpdateStatus}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Incident Detail Modal */}
       <AnimatePresence>
         {selectedIncident && (
           <IncidentDetail
             incident={selectedIncident}
-            onClose={() => setSelectedIncident(null)}
+            onClose={() => {
+              setSelectedIncident(null);
+              setHighlightedId(null);
+            }}
             onUpdateStatus={handleUpdateStatus}
-            analysts={ANALYSTS}
+            onNavigateToInvestigation={handleNavigateToInvestigation}
           />
         )}
       </AnimatePresence>

@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Play, Pause, Square, ChevronRight, AlertTriangle,
+  Play, Square, ChevronRight, AlertTriangle,
   Shield, Target, Clock, Zap, CheckCircle, Radio,
-  Activity, Eye, ChevronDown, Terminal, Code, FileText,
-  AlertCircle, Copy, Check, ExternalLink, Skull
+  Activity, Eye, Terminal, Code, FileText,
+  AlertCircle, Copy, Check, Skull, ArrowRight, ExternalLink
 } from 'lucide-react';
 import { attackSimulator, ATTACK_SCENARIOS } from '../services/attackSimulator';
 import { useAppStore } from '../store/appStore';
-import { cn, getSeverityBadge } from '../services/utils';
+import { cn, getSeverityBadge, v4 as uuidv4 } from '../services/utils';
 
 // Syntax highlighting for code
 function CodeBlock({ code, language }) {
@@ -23,13 +23,13 @@ function CodeBlock({ code, language }) {
 
   return (
     <div className="relative group">
-      <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <span className="text-xs text-gray-500 bg-dark-800 px-2 py-0.5 rounded">{language}</span>
         <button onClick={copyCode} className="p-1 bg-dark-800 rounded hover:bg-dark-700">
           {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
         </button>
       </div>
-      <pre className="bg-dark-950 rounded-lg p-4 overflow-x-auto text-xs font-mono text-green-400 max-h-64 overflow-y-auto">
+      <pre className="bg-dark-950 rounded-lg p-3 sm:p-4 overflow-x-auto text-[10px] sm:text-xs font-mono text-green-400 max-h-48 sm:max-h-64 overflow-y-auto">
         {code}
       </pre>
     </div>
@@ -40,39 +40,39 @@ function CodeBlock({ code, language }) {
 function TerminalOutput({ content, stream = 'stdout' }) {
   return (
     <div className={cn(
-      "font-mono text-xs p-3 rounded-lg",
+      "font-mono text-[10px] sm:text-xs p-2 sm:p-3 rounded-lg",
       stream === 'stdout' ? 'bg-dark-950 text-gray-300' :
       stream === 'stderr' ? 'bg-red-950/50 text-red-300' :
       'bg-blue-950/50 text-blue-300'
     )}>
-      <pre className="whitespace-pre-wrap">{content}</pre>
+      <pre className="whitespace-pre-wrap break-all">{content}</pre>
     </div>
   );
 }
 
 // Script visualization panel
-function ScriptPanel({ scripts, currentScript }) {
+function ScriptPanel({ scripts }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
-    if (containerRef.current && currentScript) {
+    if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [currentScript, scripts]);
+  }, [scripts]);
 
   return (
     <div className="bg-dark-900 rounded-xl border border-dark-700 overflow-hidden h-full">
-      <div className="flex items-center gap-2 p-3 border-b border-dark-700 bg-dark-800">
+      <div className="flex items-center gap-2 p-2 sm:p-3 border-b border-dark-700 bg-dark-800">
         <Terminal className="w-4 h-4 text-green-500" />
-        <span className="font-medium text-sm">Attack Script Execution</span>
+        <span className="font-medium text-xs sm:text-sm">Attack Script Execution</span>
         <div className="ml-auto flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500" />
-          <div className="w-3 h-3 rounded-full bg-green-500" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500" />
         </div>
       </div>
       
-      <div ref={containerRef} className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+      <div ref={containerRef} className="p-2 sm:p-4 space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[500px] overflow-y-auto">
         <AnimatePresence mode="popLayout">
           {scripts.map((script, index) => (
             <motion.div
@@ -84,45 +84,41 @@ function ScriptPanel({ scripts, currentScript }) {
             >
               {script.type === 'command' && (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-xs">
                     <span className="text-cyan-400">$</span>
-                    <span className="text-green-400 font-mono">{script.command}</span>
+                    <span className="text-green-400 font-mono break-all">{script.command}</span>
                   </div>
-                  {script.output && (
-                    <TerminalOutput content={script.output} />
-                  )}
+                  {script.output && <TerminalOutput content={script.output} />}
                 </div>
               )}
               
               {script.type === 'script' && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-400">
                     <Code className="w-3 h-3" />
                     <span>{script.name}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-dark-700">{script.language}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-700">{script.language}</span>
                   </div>
                   <CodeBlock code={script.code} language={script.language} />
                 </div>
               )}
               
-              {script.type === 'output' && (
-                <TerminalOutput content={script.content} stream={script.stream} />
-              )}
+              {script.type === 'output' && <TerminalOutput content={script.content} stream={script.stream} />}
               
               {script.type === 'info' && (
-                <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-950/30 p-2 rounded">
-                  <AlertCircle className="w-3 h-3" />
+                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-blue-400 bg-blue-950/30 p-2 rounded">
+                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
                   <span>{script.message}</span>
                 </div>
               )}
               
               {script.type === 'log' && (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-orange-400">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-xs text-orange-400">
                     <FileText className="w-3 h-3" />
                     <span>Log captured: {script.source}</span>
                   </div>
-                  <pre className="bg-dark-950 rounded p-2 text-xs font-mono text-gray-400 overflow-x-auto">
+                  <pre className="bg-dark-950 rounded p-2 text-[10px] font-mono text-gray-400 overflow-x-auto break-all">
                     {script.raw}
                   </pre>
                 </div>
@@ -133,23 +129,23 @@ function ScriptPanel({ scripts, currentScript }) {
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border",
+                    "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border",
                     script.severity === 'Critical' ? 'bg-red-950/50 border-red-500/50' :
                     script.severity === 'High' ? 'bg-orange-950/50 border-orange-500/50' :
                     'bg-yellow-950/50 border-yellow-500/50'
                   )}
                 >
                   <AlertTriangle className={cn(
-                    "w-5 h-5",
+                    "w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0",
                     script.severity === 'Critical' ? 'text-red-500' :
                     script.severity === 'High' ? 'text-orange-500' :
                     'text-yellow-500'
                   )} />
-                  <div>
-                    <p className="font-medium text-sm">{script.name}</p>
-                    <p className="text-xs text-gray-400">Detection triggered</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs sm:text-sm truncate">{script.name}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400">Detection triggered</p>
                   </div>
-                  <span className={cn("ml-auto text-xs px-2 py-0.5 rounded-full", getSeverityBadge(script.severity))}>
+                  <span className={cn("text-[10px] sm:text-xs px-2 py-0.5 rounded-full flex-shrink-0", getSeverityBadge(script.severity))}>
                     {script.severity}
                   </span>
                 </motion.div>
@@ -159,9 +155,9 @@ function ScriptPanel({ scripts, currentScript }) {
         </AnimatePresence>
         
         {scripts.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-600">
-            <Terminal className="w-8 h-8 mb-2 opacity-50" />
-            <p>Waiting for attack execution...</p>
+          <div className="flex flex-col items-center justify-center h-32 sm:h-48 text-gray-600">
+            <Terminal className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-50" />
+            <p className="text-xs sm:text-sm">Waiting for attack execution...</p>
           </div>
         )}
       </div>
@@ -174,18 +170,18 @@ function IOCsPanel({ iocs }) {
   if (!iocs) return null;
 
   return (
-    <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-      <h3 className="font-semibold mb-3 flex items-center gap-2">
+    <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+      <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
         <Skull className="w-4 h-4 text-red-500" />
         Indicators of Compromise
       </h3>
       <div className="space-y-3">
         {iocs.ips?.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 uppercase mb-1">IP Addresses</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 uppercase mb-1">IP Addresses</p>
             <div className="flex flex-wrap gap-1">
               {iocs.ips.map(ip => (
-                <code key={ip} className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-mono">
+                <code key={ip} className="text-[10px] sm:text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-mono">
                   {ip}
                 </code>
               ))}
@@ -194,10 +190,10 @@ function IOCsPanel({ iocs }) {
         )}
         {iocs.techniques?.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 uppercase mb-1">MITRE Techniques</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 uppercase mb-1">MITRE Techniques</p>
             <div className="flex flex-wrap gap-1">
               {iocs.techniques.map(tech => (
-                <code key={tech} className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                <code key={tech} className="text-[10px] sm:text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
                   {tech}
                 </code>
               ))}
@@ -206,12 +202,12 @@ function IOCsPanel({ iocs }) {
         )}
         {iocs.indicators?.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 uppercase mb-1">Behavioral Indicators</p>
-            <ul className="text-xs text-gray-400 space-y-1">
+            <p className="text-[10px] sm:text-xs text-gray-500 uppercase mb-1">Behavioral Indicators</p>
+            <ul className="text-[10px] sm:text-xs text-gray-400 space-y-1">
               {iocs.indicators.map((ind, i) => (
-                <li key={i} className="flex items-center gap-2">
-                  <ChevronRight className="w-3 h-3 text-orange-500" />
-                  {ind}
+                <li key={i} className="flex items-start gap-2">
+                  <ChevronRight className="w-3 h-3 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <span>{ind}</span>
                 </li>
               ))}
             </ul>
@@ -224,21 +220,21 @@ function IOCsPanel({ iocs }) {
 
 // Remediation Panel
 function RemediationPanel({ steps }) {
-  if (!steps) return null;
+  if (!steps?.length) return null;
 
   return (
-    <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-      <h3 className="font-semibold mb-3 flex items-center gap-2">
+    <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+      <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
         <Shield className="w-4 h-4 text-green-500" />
         Remediation Steps
       </h3>
       <ol className="space-y-2">
         {steps.map((step, index) => (
-          <li key={index} className="flex items-start gap-3">
-            <span className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-xs flex items-center justify-center flex-shrink-0">
+          <li key={index} className="flex items-start gap-2 sm:gap-3">
+            <span className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-[10px] sm:text-xs flex items-center justify-center flex-shrink-0">
               {index + 1}
             </span>
-            <span className="text-sm text-gray-300">{step}</span>
+            <span className="text-xs sm:text-sm text-gray-300">{step}</span>
           </li>
         ))}
       </ol>
@@ -253,7 +249,7 @@ function ScenarioCard({ scenario, isSelected, isRunning, onSelect, onStart }) {
       layout
       onClick={() => onSelect(scenario)}
       className={cn(
-        "relative p-5 rounded-xl border cursor-pointer transition-all",
+        "relative p-3 sm:p-5 rounded-xl border cursor-pointer transition-all",
         "bg-dark-800/50 hover:bg-dark-800",
         isSelected 
           ? 'border-cyber-500 ring-2 ring-cyber-500/20' 
@@ -261,36 +257,36 @@ function ScenarioCard({ scenario, isSelected, isRunning, onSelect, onStart }) {
       )}
     >
       <div className={cn(
-        "absolute top-3 right-3 w-3 h-3 rounded-full",
+        "absolute top-2 sm:top-3 right-2 sm:right-3 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full",
         scenario.severity === 'Critical' ? 'bg-red-500 animate-pulse' :
         scenario.severity === 'High' ? 'bg-orange-500' :
         'bg-yellow-500'
       )} />
 
-      <div className="flex items-start gap-4">
-        <div className="text-4xl">{scenario.icon}</div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg">{scenario.name}</h3>
-          <p className="text-sm text-gray-400 mt-1 line-clamp-2">{scenario.description}</p>
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="text-2xl sm:text-4xl">{scenario.icon}</div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm sm:text-lg line-clamp-1">{scenario.name}</h3>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1 line-clamp-2">{scenario.description}</p>
           
-          <div className="flex flex-wrap gap-2 mt-3">
-            <span className={cn("text-xs px-2 py-1 rounded-full", getSeverityBadge(scenario.severity))}>
+          <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-3">
+            <span className={cn("text-[10px] sm:text-xs px-2 py-0.5 sm:py-1 rounded-full", getSeverityBadge(scenario.severity))}>
               {scenario.severity}
             </span>
-            {scenario.techniques.map(tech => (
-              <span key={tech} className="text-xs px-2 py-1 rounded-full bg-dark-700 text-gray-300 font-mono">
+            {scenario.techniques.slice(0, 2).map(tech => (
+              <span key={tech} className="text-[10px] sm:text-xs px-2 py-0.5 sm:py-1 rounded-full bg-dark-700 text-gray-300 font-mono">
                 {tech}
               </span>
             ))}
           </div>
 
-          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+          <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 text-xs sm:text-sm text-gray-500">
             <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{Math.round(scenario.duration / 1000)}s</span>
             </div>
             <div className="flex items-center gap-1">
-              <Code className="w-4 h-4" />
+              <Code className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Live scripts</span>
             </div>
           </div>
@@ -302,10 +298,10 @@ function ScenarioCard({ scenario, isSelected, isRunning, onSelect, onStart }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={(e) => { e.stopPropagation(); onStart(scenario); }}
-          className="w-full mt-4 py-3 rounded-lg font-medium bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white flex items-center justify-center gap-2 shadow-lg shadow-red-500/20"
+          className="w-full mt-3 sm:mt-4 py-2.5 sm:py-3 rounded-lg font-medium bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 text-sm sm:text-base"
         >
-          <Play className="w-5 h-5" />
-          Launch Attack Simulation
+          <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+          Launch Attack
         </motion.button>
       )}
     </motion.div>
@@ -321,18 +317,18 @@ function ProgressTimeline({ phases, currentPhase, progress }) {
         const isCurrent = currentPhase?.name === phase.name;
         
         return (
-          <div key={phase.name} className="flex items-center gap-3">
+          <div key={phase.name} className="flex items-center gap-2 sm:gap-3">
             <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors",
+              "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors",
               isComplete ? 'bg-green-500' :
               isCurrent ? 'bg-cyber-500 animate-pulse' :
               'bg-dark-700'
             )}>
-              {isComplete ? <CheckCircle className="w-5 h-5 text-white" /> : <span className="text-sm font-medium">{index + 1}</span>}
+              {isComplete ? <CheckCircle className="w-3 h-3 sm:w-5 sm:h-5 text-white" /> : <span className="text-[10px] sm:text-sm font-medium">{index + 1}</span>}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className={cn(
-                "text-sm font-medium transition-colors",
+                "text-xs sm:text-sm font-medium transition-colors truncate",
                 isCurrent ? 'text-cyber-400' : isComplete ? 'text-green-400' : 'text-gray-500'
               )}>{phase.name}</p>
             </div>
@@ -344,6 +340,7 @@ function ProgressTimeline({ phases, currentPhase, progress }) {
 }
 
 export default function AttackSimulator() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -353,6 +350,7 @@ export default function AttackSimulator() {
   const [iocs, setIOCs] = useState(null);
   const [remediation, setRemediation] = useState(null);
   const [generatedIncident, setGeneratedIncident] = useState(null);
+  
   const { setAttackMode, addLiveEvent, addIncident } = useAppStore();
 
   const scenarios = Object.values(ATTACK_SCENARIOS);
@@ -374,8 +372,22 @@ export default function AttackSimulator() {
       if (detail.type === 'iocs') setIOCs(detail.data);
       if (detail.type === 'remediation') setRemediation(detail.data);
       if (detail.type === 'incident') {
-        setGeneratedIncident(detail.data);
-        addIncident(detail.data);
+        // Create a proper incident with all required fields
+        const fullIncident = {
+          ...detail.data,
+          id: uuidv4(),
+          alertCount: Math.floor(Math.random() * 10) + 5,
+          entities: {
+            users: Math.floor(Math.random() * 5) + 1,
+            ips: Math.floor(Math.random() * 3) + 1,
+            devices: Math.floor(Math.random() * 2) + 1
+          },
+          comments: 0,
+          attachments: 0,
+          slaMinutes: detail.data.severity === 'Critical' ? 30 : detail.data.severity === 'High' ? 60 : 120,
+        };
+        setGeneratedIncident(fullIncident);
+        addIncident(fullIncident);
       }
     });
 
@@ -406,24 +418,30 @@ export default function AttackSimulator() {
     setAttackMode(false);
   }, [setAttackMode]);
 
+  const handleViewIncident = useCallback(() => {
+    if (generatedIncident) {
+      navigate(`/incidents?highlight=${generatedIncident.id}`);
+    }
+  }, [generatedIncident, navigate]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Zap className="w-8 h-8 text-yellow-500" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
+            <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
             Attack Simulator
           </h1>
-          <p className="text-gray-400 mt-1">
-            Execute realistic attack scenarios with detailed script visualization
+          <p className="text-gray-400 mt-1 text-sm">
+            Execute realistic attack scenarios with live script visualization
           </p>
         </div>
         
         {isRunning && (
-          <button onClick={handleStop} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors">
+          <button onClick={handleStop} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors text-sm">
             <Square className="w-4 h-4" />
-            Stop Simulation
+            Stop
           </button>
         )}
       </div>
@@ -435,22 +453,22 @@ export default function AttackSimulator() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
             {/* Progress Header */}
-            <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl border border-red-500/20 p-6">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">{selectedScenario.icon}</div>
-                <div className="flex-1">
+            <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl border border-red-500/20 p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="text-2xl sm:text-4xl">{selectedScenario.icon}</div>
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-                    <span className="text-sm text-red-400 font-medium">ATTACK IN PROGRESS</span>
+                    <Radio className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 animate-pulse" />
+                    <span className="text-[10px] sm:text-sm text-red-400 font-medium">ATTACK IN PROGRESS</span>
                   </div>
-                  <h2 className="text-xl font-bold mt-1">{selectedScenario.name}</h2>
+                  <h2 className="text-base sm:text-xl font-bold mt-1 truncate">{selectedScenario.name}</h2>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold">{Math.round(progress)}%</p>
-                  <p className="text-sm text-gray-400">Progress</p>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xl sm:text-3xl font-bold">{Math.round(progress)}%</p>
+                  <p className="text-[10px] sm:text-sm text-gray-400">Progress</p>
                 </div>
               </div>
               <div className="mt-4 h-2 bg-dark-800 rounded-full overflow-hidden">
@@ -463,16 +481,16 @@ export default function AttackSimulator() {
             </div>
 
             {/* Main Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
               {/* Script Panel */}
               <div className="xl:col-span-2">
-                <ScriptPanel scripts={scripts} currentScript={scripts[scripts.length - 1]} />
+                <ScriptPanel scripts={scripts} />
               </div>
 
               {/* Side Panel */}
               <div className="space-y-4">
-                <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-4">
-                  <h3 className="font-semibold mb-3">Execution Progress</h3>
+                <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-3 sm:p-4">
+                  <h3 className="font-semibold text-sm mb-3">Execution Progress</h3>
                   <ProgressTimeline phases={selectedScenario.phases} currentPhase={currentPhase} progress={progress} />
                 </div>
                 <IOCsPanel iocs={iocs} />
@@ -488,26 +506,32 @@ export default function AttackSimulator() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl border border-red-500/30 p-6"
+          className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl border border-red-500/30 p-4 sm:p-6"
         >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold">Incident Created</h3>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-bold">Incident Created</h3>
                 <span className={cn("text-xs px-2 py-0.5 rounded-full", getSeverityBadge(generatedIncident.severity))}>
                   {generatedIncident.severity}
                 </span>
               </div>
-              <p className="text-gray-400 mt-1">{generatedIncident.title}</p>
-              <div className="flex gap-3 mt-4">
-                <Link to="/incidents" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyber-500/20 text-cyber-400 hover:bg-cyber-500/30 text-sm font-medium">
+              <p className="text-gray-400 mt-1 text-sm line-clamp-2">{generatedIncident.title}</p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4">
+                <button
+                  onClick={handleViewIncident}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyber-500 text-white hover:bg-cyber-600 text-sm font-medium transition-colors"
+                >
                   View in Incidents
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-                <Link to="/investigation" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm font-medium">
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <Link
+                  to={`/investigation?incident=${generatedIncident.id}`}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-sm font-medium transition-colors"
+                >
                   <Eye className="w-4 h-4" />
                   Investigate
                 </Link>
@@ -526,12 +550,12 @@ export default function AttackSimulator() {
       {/* Scenario Selection */}
       {!isRunning && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Target className="w-5 h-5 text-cyber-500" />
+          <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-cyber-500" />
             Select Attack Scenario
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {scenarios.map((scenario) => (
               <ScenarioCard
                 key={scenario.id}
