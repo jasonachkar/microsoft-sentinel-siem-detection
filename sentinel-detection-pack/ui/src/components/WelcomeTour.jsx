@@ -38,6 +38,12 @@ const STEPS = [
     why: 'Configuration drift and least-privilege deployment automation are core cloud-security concerns.',
   },
   {
+    route: '/compliance',
+    title: 'Compliance & Controls',
+    body: 'CIS Azure Foundations and NIST CSF coverage mapped to the controls actually implemented here, with before→after remediation evidence.',
+    why: 'Compliance enforcement and audit-ready evidence are exactly what hiring managers probe for.',
+  },
+  {
     route: '/rules',
     title: 'Detection Rules',
     body: '16 MITRE ATT&CK-mapped KQL detections, managed as code and validated in the pipeline.',

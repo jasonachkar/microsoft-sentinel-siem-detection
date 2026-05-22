@@ -59,6 +59,7 @@ const TUTORIALS = {
       { id: 3, title: 'Enforce Shift-Left AppSec', description: 'Gitleaks, TFSec and Trivy gate the build on HIGH/CRITICAL findings.', link: '/appsec', action: 'View AppSec', why: 'Policy-as-code in CI is how cloud teams scale security.' },
       { id: 4, title: 'Catch Configuration Drift', description: 'A nightly terraform plan detects out-of-band changes and opens an incident.', link: '/drift', action: 'View Drift', why: '"ClickOps" drift is one of the top cloud-breach root causes.' },
       { id: 5, title: 'Optimize Cost (FinOps)', description: 'Model SIEM ingestion cost and hot/cold tiering trade-offs.', link: '/finops', action: 'Open FinOps', why: 'Security that ignores spend does not survive a budget review.' },
+      { id: 6, title: 'Map to Compliance', description: 'See CIS Azure and NIST CSF controls mapped to the real implementation, with remediation evidence.', link: '/compliance', action: 'Open Compliance', why: 'Audit-ready control mapping is what turns "I built it" into "I can prove it".' },
     ],
   },
   attacker: {

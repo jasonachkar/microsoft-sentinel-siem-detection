@@ -11,6 +11,12 @@ export const navSections = [
     ],
   },
   {
+    section: 'Governance',
+    items: [
+      { path: '/compliance', icon: 'pi-check-square', label: 'Compliance & Controls', keywords: 'cis nist csf benchmark audit controls' },
+    ],
+  },
+  {
     section: 'Active Defense',
     items: [
       { path: '/incidents', icon: 'pi-shield', label: 'Live Incidents', keywords: 'alerts queue triage' },
