@@ -8,6 +8,9 @@ backing it.
 > The in-app **Reference Architecture** and **Infrastructure as Code** views visualize
 > everything below directly from this repository — no mock-ups.
 
+**▶ Live demo:** https://sentinel-detection-pack.vercel.app — a guided tour starts on
+first load; press `⌘K` / `Ctrl+K` anywhere for the command palette.
+
 ---
 
 ## Architecture
@@ -80,10 +83,17 @@ npm install
 npm run dev      # http://localhost:3000
 ```
 
-Views include the **Command Center**, **Reference Architecture** (live topology),
-**AppSec & Supply Chain** (Gitleaks/TFSec/Trivy results), **IaC Drift & Pipeline**,
-**Infrastructure as Code** (renders the real Terraform/Go/workflow source),
-**Security FinOps**, **SOAR Playbooks**, **AI Copilot**, and the detection/threat tooling.
+Highlights of the console:
+
+- **Guided tour** (first-visit + replayable) and a `⌘K` **command palette** for navigation.
+- **Command Center** · **Reference Architecture** (live ReactFlow topology).
+- **Compliance & Controls** — CIS Azure + NIST CSF mapped to the real implementation.
+- **Architecture Decisions** — ADRs with context / decision / why / trade-off (also in `docs/adr/`).
+- **AppSec & Supply Chain** (Gitleaks / TFSec / Trivy, published to GitHub code scanning as SARIF).
+- **IaC Drift & Pipeline**, **Infrastructure as Code** (renders the real Terraform/Go/workflow source).
+- **Detection Deep-Dive** (tuning + false-positive analysis), **Learning Paths** (cert-aligned).
+- **Security FinOps**, **SOAR Playbooks**, **AI Copilot**, and the detection / threat tooling.
+
 `npm run sync-data` bundles the live repo source into the UI at build time.
 
 ## Security hardening highlights
@@ -92,7 +102,8 @@ Views include the **Command Center**, **Reference Architecture** (live topology)
 - CloudTrail S3 bucket: customer-managed **KMS** encryption + key rotation, public-access block,
   versioning, and a scoped CloudTrail bucket policy.
 - SOAR identity scoped to **Network Contributor on the resource group**, not subscription-wide.
-- CI security scans **fail the build** on HIGH/CRITICAL findings.
+- CI security scans **fail the build** on HIGH/CRITICAL findings; Trivy results publish to GitHub code scanning (SARIF).
+- **Azure Policy enforcement** (`terraform-policy/`): deny/audit definitions + Microsoft Cloud Security Benchmark — prevention to complement detection.
 
 ## License
 

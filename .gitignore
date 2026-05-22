@@ -27,3 +27,7 @@ src-cli/sentinel-deployer
 # Local terraform plugin cache / temp (validation)
 .tftmp/
 .tfcache/
+
+# .NET build output
+**/bin/
+**/obj/
