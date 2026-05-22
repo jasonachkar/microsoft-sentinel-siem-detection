@@ -70,7 +70,7 @@ function CodeViewer({ file }) {
   const lines = useMemo(() => file.content.split(/\r?\n/), [file.content]);
 
   return (
-    <div className="overflow-auto rounded-lg border border-dark-700 bg-black/60 font-mono text-[13px] leading-relaxed">
+    <div className="h-[calc(100vh-18rem)] min-h-[420px] overflow-auto rounded-lg border border-dark-700 bg-black/60 font-mono text-[13px] leading-relaxed">
       <table className="w-full border-collapse">
         <tbody>
           {lines.map((line, idx) => (

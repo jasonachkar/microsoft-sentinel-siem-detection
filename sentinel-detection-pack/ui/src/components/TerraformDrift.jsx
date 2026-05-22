@@ -116,7 +116,7 @@ export default function TerraformDrift() {
             Output from <span className="font-mono text-gray-300">src-cli</span> walking the YAML rules and pushing them to
             the Sentinel AlertRules API via federated credentials.
           </p>
-          <div className="rounded-lg border border-dark-700 bg-black p-4 font-mono text-xs leading-relaxed">
+          <div className="h-64 overflow-auto rounded-lg border border-dark-700 bg-black p-4 font-mono text-xs leading-relaxed">
             {deployLog.map((line, i) => (
               <div key={i} className={logColor[line.level] || 'text-gray-300'}>
                 {line.text}
