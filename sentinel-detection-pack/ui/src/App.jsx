@@ -11,6 +11,9 @@ import KQLPlayground from './components/KQLPlayground';
 import Metrics from './components/Metrics';
 import AttackSimulator from './components/AttackSimulator';
 import Tutorial from './components/Tutorial';
+import SoarDashboard from './components/SoarDashboard';
+import AICopilot from './components/AICopilot';
+import FinOpsDashboard from './components/FinOpsDashboard';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -39,6 +42,9 @@ export default function App() {
             <Route path="/kql" element={<KQLPlayground />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/simulator" element={<AttackSimulator />} />
+            <Route path="/soar" element={<SoarDashboard />} />
+            <Route path="/ai-copilot" element={<AICopilot />} />
+            <Route path="/finops" element={<FinOpsDashboard />} />
             <Route path="/tutorial" element={<Tutorial />} />
           </Routes>
         </Layout>

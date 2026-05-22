@@ -16,6 +16,9 @@ $ExpectedArchitecture = @{
     "scripts\bundle-rules.sh"               = "File"
     "scripts\simulate-attack.ps1"           = "File"
     "scripts\enforce-branch-protections.sh" = "File"
+    "scripts\threat-intel-ingest.py"        = "File"
+    "scripts\ai-soc-copilot.py"             = "File"
+    "scripts\assert-detection.py"           = "File"
 
     # Custom Go Deployment CLI
     "src-cli\main.go"                       = "File"
@@ -30,6 +33,19 @@ $ExpectedArchitecture = @{
 
     # Infrastructure as Code (Honeypot)
     "terraform-honeypot\main.tf"            = "File"
+
+    # Infrastructure as Code (SOAR and Multi-Cloud)
+    "terraform-soar\main.tf"                = "File"
+    "terraform-aws-connector\main.tf"       = "File"
+
+    # Enterprise Detection Pack
+    "sentinel-detection-pack\rules\cloud\Kubernetes_Suspicious_Exec.kql"       = "File"
+    "sentinel-detection-pack\rules-yaml\cloud\Kubernetes_Suspicious_Exec.yaml" = "File"
+
+    # PrimeReact Dashboards
+    "sentinel-detection-pack\ui\src\components\SoarDashboard.jsx"   = "File"
+    "sentinel-detection-pack\ui\src\components\AICopilot.jsx"       = "File"
+    "sentinel-detection-pack\ui\src\components\FinOpsDashboard.jsx" = "File"
 }
 
 $ErrorsFound = 0

@@ -1,4 +1,10 @@
 *.sh text eol=lf
+*.ps1 text eol=lf
+*.py text eol=lf
+*.tf text eol=lf
+*.jsx text eol=lf
+*.js text eol=lf
+*.css text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
 *.kql text eol=lf

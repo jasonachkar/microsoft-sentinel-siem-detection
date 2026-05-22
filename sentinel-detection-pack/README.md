@@ -1,5 +1,53 @@
 # 🛡️ Sentinel Detection Pack
 
+## Enterprise Architecture
+
+This repository represents a complete, automated DevSecOps and Active Defense pipeline.
+
+```mermaid
+graph TD
+    %% Define Colors
+    classDef git fill:#f34f29,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef azure fill:#0078d4,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef aws fill:#ff9900,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef custom fill:#68217a,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef ui fill:#61dafb,stroke:#333,stroke-width:2px,color:#333;
+
+    %% Nodes
+    Dev[Security Engineer] -->|Pushes KQL/YAML| Repo(GitHub Repository):::git
+
+    subgraph CI/CD Pipeline [GitHub Actions Shift-Left]
+        Repo --> Scan[TFSec & Gitleaks]
+        Scan --> Validate[Python Rule Validation]
+        Validate --> Build[JSON Bundler]
+    end
+
+    subgraph Custom Tooling
+        Build --> Deployer[Golang Deployer CLI]:::custom
+    end
+
+    subgraph Multi-Cloud Infrastructure
+        Deployer -->|OIDC Auth| Sentinel[(Azure Sentinel)]:::azure
+        AWS[AWS CloudTrail]:::aws -->|AssumeRole| Sentinel
+    end
+
+    subgraph Active Defense & SOAR
+        Sentinel -->|Trigger| LogicApp[Azure Logic Apps Playbook]:::azure
+        LogicApp -->|Isolate| EntraID[Block in Entra ID]:::azure
+        Copilot[Python GenAI Copilot]:::custom -->|Triages| Sentinel
+    end
+
+    subgraph Validation
+        Repo -->|Provision| Honeypot[Terraform Ephemeral Honeypot]:::azure
+        Honeypot -->|Execute| ART[Atomic Red Team]:::custom
+        ART -->|Assert Detection| Sentinel
+    end
+
+    %% UI Dashboard
+    ReactUI[PrimeReact Control Panel]:::ui -.->|Monitors APIs| Sentinel
+    ReactUI -.->|Triggers| LogicApp
+```
+
 > **Interactive Cloud Security Operations Platform**  
 > Production-ready Microsoft Sentinel analytics rules with live threat intelligence, attack simulations, and MITRE ATT&CK coverage.
 

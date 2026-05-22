@@ -8,3 +8,7 @@
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+
+# Python
+__pycache__/
+*.py[cod]

@@ -1,49 +1,60 @@
-name: Sentinel DevSecOps Pipeline
+name: DevSecOps CI/CD Pipeline
 
-# Triggers the pipeline on PRs to validate, and on merges to main to deploy.
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */12 * * *'
 
-# Required permissions for OIDC authentication and security scanning
 permissions:
   id-token: write
   contents: read
   pull-requests: write
+  security-events: write
 
 jobs:
-  validate-and-test:
-    name: Validate Rules & Security Scan
+  security-scans:
+    name: Shift-Left Security Scans
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Python (Required for Validation)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: pip install pyyaml
-
-      - name: Validate Sentinel Rules
-        run: |
-          chmod +x ./scripts/validate-rules.sh
-          ./scripts/validate-rules.sh --check-samples
-
-      - name: Run Secret Leak Scan (Gitleaks)
+      - name: Gitleaks Secret Scanning
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-and-bundle:
-    name: Build Rule Artifacts
-    needs: validate-and-test
+      - name: TFSec Core Azure Infrastructure Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+          working_directory: ./terraform
+
+      - name: TFSec Honeypot Infrastructure Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+          working_directory: ./terraform-honeypot
+
+      - name: TFSec SOAR Infrastructure Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+          working_directory: ./terraform-soar
+
+      - name: TFSec AWS Connector Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+          working_directory: ./terraform-aws-connector
+
+  validate-and-build:
+    name: Validate & Bundle Rules
+    needs: security-scans
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -57,6 +68,11 @@ jobs:
       - name: Install Dependencies
         run: pip install pyyaml
 
+      - name: Validate Sentinel Rules
+        run: |
+          chmod +x ./scripts/validate-rules.sh
+          ./scripts/validate-rules.sh --check-samples
+
       - name: Bundle Detection Rules
         run: |
           chmod +x ./scripts/bundle-rules.sh
@@ -69,10 +85,43 @@ jobs:
           path: sentinel-detection-pack/bundles/
           retention-days: 14
 
+  detection-assertion:
+    name: Detection-as-Code Assertion
+    needs: validate-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Assert Atomic Red Team Detection
+        run: python scripts/assert-detection.py
+
+  threat-intel-ingestion:
+    name: Threat Intelligence Ingestion
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run Threat Intelligence Pipeline
+        run: python scripts/threat-intel-ingest.py
+
   deploy-to-sentinel:
-    name: Deploy to Azure Sentinel
-    needs: build-and-bundle
-    # Only run deployment if the code is merged into the main branch
+    name: Deploy SIEM & SOAR
+    needs:
+      - validate-and-build
+      - detection-assertion
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
@@ -86,15 +135,7 @@ jobs:
           name: sentinel-rules-bundle
           path: bundles/
 
-      # Phase 3 Hook: Authentication via OIDC (Best Practice for DevSecOps)
-      # - name: Azure Login
-      #   uses: azure/login@v2
-      #   with:
-      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Execute Deployment
         run: |
-          echo "Phase 3 deployment automation will execute here."
-          echo "The custom Go/PowerShell deployment tool will parse the artifact and interact with Azure REST APIs."
+          echo "Deployment execution via Go CLI runs here."
+          echo "SOAR playbook deployment uses terraform-soar/ and OIDC-backed Azure authentication."

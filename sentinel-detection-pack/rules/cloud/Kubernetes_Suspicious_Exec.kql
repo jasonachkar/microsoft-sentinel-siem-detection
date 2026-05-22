@@ -1,0 +1,35 @@
+/*
+RuleId: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+Name: Kubernetes: Suspicious Container Execution
+Category: cloud
+Severity: High
+Tactics: Execution
+Techniques: T1609
+DataSources: AKSAudit, AKSAuditAdmin
+QueryFrequency: PT5M
+QueryPeriod: PT1H
+TriggerOperator: GreaterThan
+TriggerThreshold: 0
+Version: 1.0.0
+Author: Jason Achkar Diab (template)
+Status: Production
+Description: Detects suspicious kubectl exec activity against running Kubernetes containers.
+FalsePositives: Authorized cluster administration, break-glass troubleshooting, or approved SRE maintenance
+*/
+
+let suspicious_commands = dynamic(["/bin/bash", "/bin/sh", "curl", "wget", "nc"]);
+AKSAuditAdmin
+| where Category == "kube-audit"
+| extend log_json = parse_json(Log)
+| where log_json.verb == "create"
+| where log_json.objectRef.resource == "pods" and log_json.objectRef.subresource == "exec"
+| extend command = tostring(log_json.requestObject.command)
+| where command has_any (suspicious_commands)
+| project TimeGenerated,
+    User=tostring(log_json.user.username),
+    Pod=tostring(log_json.objectRef.name),
+    Namespace=tostring(log_json.objectRef.namespace),
+    Command=command,
+    SourceIP=tostring(log_json.sourceIPs[0])
+| extend AccountCustomEntity = User
+| extend IPCustomEntity = SourceIP

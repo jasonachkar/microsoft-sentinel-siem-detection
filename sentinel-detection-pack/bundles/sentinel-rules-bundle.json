@@ -112,6 +112,55 @@
       "version": "1.0.0"
     },
     {
+      "id": "8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+      "name": "Kubernetes: Suspicious Container Execution",
+      "description": "Detects when a user executes an interactive terminal, such as /bin/bash or /bin/sh,\ninside a running Kubernetes container using kubectl exec. This is a primary technique\n(T1609) for attackers administering containers or moving laterally in cloud-native environments.\n",
+      "severity": "High",
+      "status": "Production",
+      "requiredDataConnectors": [
+        {
+          "connectorId": "AzureKubernetesService",
+          "dataTypes": [
+            "AKSAudit",
+            "AKSAuditAdmin"
+          ]
+        }
+      ],
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": 0,
+      "tactics": [
+        "Execution"
+      ],
+      "techniques": [
+        "T1609"
+      ],
+      "query": "let suspicious_commands = dynamic([\"/bin/bash\", \"/bin/sh\", \"curl\", \"wget\", \"nc\"]);\nAKSAuditAdmin\n| where Category == \"kube-audit\"\n| extend log_json = parse_json(Log)\n| where log_json.verb == \"create\"\n| where log_json.objectRef.resource == \"pods\" and log_json.objectRef.subresource == \"exec\"\n| extend command = tostring(log_json.requestObject.command)\n| where command has_any (suspicious_commands)\n| project TimeGenerated,\n    User=tostring(log_json.user.username),\n    Pod=tostring(log_json.objectRef.name),\n    Namespace=tostring(log_json.objectRef.namespace),\n    Command=command,\n    SourceIP=tostring(log_json.sourceIPs[0])\n| extend AccountCustomEntity = User\n| extend IPCustomEntity = SourceIP\n",
+      "entityMappings": [
+        {
+          "entityType": "Account",
+          "fieldMappings": [
+            {
+              "identifier": "Name",
+              "columnName": "User"
+            }
+          ]
+        },
+        {
+          "entityType": "IP",
+          "fieldMappings": [
+            {
+              "identifier": "Address",
+              "columnName": "SourceIP"
+            }
+          ]
+        }
+      ],
+      "kind": "Scheduled",
+      "version": "1.0.0"
+    },
+    {
       "id": "dba8a2af-a17b-43fb-b5b7-09b2e659dd3a",
       "name": "Rare Admin Operations (Entra ID + Azure Activity)",
       "description": "Identifies high-impact admin operations that are rare for the initiating actor.\nData sources: AuditLogs (Microsoft Entra ID), AzureActivity.\nTuning: adjust MaxHistoricalCount and tailor the high-impact operation lists.\nRecommended actions: validate change control, confirm actor legitimacy, and review affected resources.\n",

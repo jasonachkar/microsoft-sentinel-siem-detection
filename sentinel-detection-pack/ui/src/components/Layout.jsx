@@ -11,6 +11,10 @@ import {
 import { useAppStore } from '../store/appStore';
 import { cn, formatRelativeTime, getSeverityBadge } from '../services/utils';
 
+const primeNavIcon = (iconClass) => function PrimeNavIcon({ className }) {
+  return <i className={cn(iconClass, className)} />;
+};
+
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Activity },
   { name: 'Threat Map', href: '/threat-map', icon: Map },
@@ -21,6 +25,9 @@ const navigation = [
   { name: 'KQL Playground', href: '/kql', icon: Database },
   { name: 'Metrics', href: '/metrics', icon: BarChart3 },
   { name: 'Attack Simulator', href: '/simulator', icon: Zap },
+  { name: 'Active Defense', href: '/soar', icon: primeNavIcon('pi pi-bolt') },
+  { name: 'AI Copilot', href: '/ai-copilot', icon: primeNavIcon('pi pi-sparkles') },
+  { name: 'Security FinOps', href: '/finops', icon: primeNavIcon('pi pi-dollar') },
   { name: 'Tutorial', href: '/tutorial', icon: BookOpen },
 ];
 
