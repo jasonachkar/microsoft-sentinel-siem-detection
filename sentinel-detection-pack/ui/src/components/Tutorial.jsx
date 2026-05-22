@@ -3,252 +3,158 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Play, ChevronRight, CheckCircle, Circle,
-  Shield, Target, Search, Zap, BarChart3, Database,
-  AlertTriangle, Map, User, Lock, Eye
+  Shield, Target, Server, User, Map, Zap, Award,
 } from 'lucide-react';
 import { cn } from '../services/utils';
+
+// Static class maps (literal strings so Tailwind's JIT keeps them in the build).
+const ACCENTS = {
+  cyber: { tile: 'bg-cyan-500/10 border-cyan-500', iconWrap: 'bg-cyan-500/20', icon: 'text-cyan-400', bar: 'from-cyan-500 to-emerald-500' },
+  purple: { tile: 'bg-purple-500/10 border-purple-500', iconWrap: 'bg-purple-500/20', icon: 'text-purple-400', bar: 'from-purple-500 to-blue-500' },
+  blue: { tile: 'bg-blue-500/10 border-blue-500', iconWrap: 'bg-blue-500/20', icon: 'text-blue-400', bar: 'from-blue-500 to-cyan-500' },
+  red: { tile: 'bg-red-500/10 border-red-500', iconWrap: 'bg-red-500/20', icon: 'text-red-400', bar: 'from-red-500 to-orange-500' },
+};
 
 const TUTORIALS = {
   analyst: {
     id: 'analyst',
-    title: "I'm a SOC Analyst",
-    subtitle: 'Learn to investigate and respond to security incidents',
+    title: "SOC Analyst",
+    subtitle: 'Investigate and respond to security incidents',
     icon: User,
     color: 'cyber',
+    cert: 'Aligns with SC-200',
     steps: [
-      {
-        id: 1,
-        title: 'View the Dashboard',
-        description: 'Start by exploring the security operations dashboard to see the current threat landscape.',
-        link: '/',
-        action: 'Go to Dashboard',
-        tip: 'The dashboard shows real-time alerts, incidents, and MITRE coverage at a glance.',
-      },
-      {
-        id: 2,
-        title: 'Check Open Incidents',
-        description: 'Review the incident queue to see security events that need investigation.',
-        link: '/incidents',
-        action: 'View Incidents',
-        tip: 'Incidents are grouped and prioritized by severity. Critical incidents should be addressed first.',
-      },
-      {
-        id: 3,
-        title: 'Investigate an Incident',
-        description: 'Select an incident and explore the entity graph, timeline, and evidence.',
-        link: '/investigation',
-        action: 'Start Investigation',
-        tip: 'The entity graph shows relationships between users, IPs, devices, and applications involved.',
-      },
-      {
-        id: 4,
-        title: 'Run a KQL Query',
-        description: 'Use the KQL playground to hunt for additional indicators of compromise.',
-        link: '/kql',
-        action: 'Open KQL Playground',
-        tip: 'KQL (Kusto Query Language) is used to query logs in Microsoft Sentinel and Defender.',
-      },
-      {
-        id: 5,
-        title: 'Review Metrics',
-        description: 'Check SOC metrics like MTTD, MTTR, and false positive rates.',
-        link: '/metrics',
-        action: 'View Metrics',
-        tip: 'These metrics help measure and improve security operations efficiency.',
-      },
-    ],
-  },
-  attacker: {
-    id: 'attacker',
-    title: "I'm a Red Teamer",
-    subtitle: 'See how attacks are detected from the defender perspective',
-    icon: Target,
-    color: 'red',
-    steps: [
-      {
-        id: 1,
-        title: 'Explore Detection Rules',
-        description: 'Browse the detection rules catalog to see what attacks are detected.',
-        link: '/rules',
-        action: 'View Rules',
-        tip: 'Each rule includes the KQL logic, MITRE mapping, and tuning guidance.',
-      },
-      {
-        id: 2,
-        title: 'View MITRE ATT&CK Coverage',
-        description: 'See which tactics and techniques have detection coverage.',
-        link: '/mitre',
-        action: 'Open MITRE Navigator',
-        tip: 'Green cells indicate coverage. Look for gaps to understand blind spots.',
-      },
-      {
-        id: 3,
-        title: 'Launch an Attack Simulation',
-        description: 'Run a simulated attack to see how it triggers detection rules.',
-        link: '/simulator',
-        action: 'Open Simulator',
-        tip: 'Watch the live event stream to see exactly what telemetry the attack generates.',
-      },
-      {
-        id: 4,
-        title: 'Study the Detection Logic',
-        description: 'Review the KQL queries to understand what patterns trigger alerts.',
-        link: '/kql',
-        action: 'Analyze Queries',
-        tip: 'Understanding detection logic helps identify potential bypasses.',
-      },
-      {
-        id: 5,
-        title: 'Check Threat Intelligence',
-        description: 'Review the threat map to see global attack patterns and IOCs.',
-        link: '/threat-map',
-        action: 'View Threat Map',
-        tip: 'Real-time threat intelligence feeds inform detection rules and blocklists.',
-      },
+      { id: 1, title: 'Read the Command Center', description: 'Start with the single pane of glass: live posture, AppSec gate status, and threat intel.', link: '/', action: 'Open Command Center', tip: 'Everything an on-call analyst needs at a glance.', why: 'Situational awareness is the first move of any shift.' },
+      { id: 2, title: 'Triage Incidents', description: 'Work the incident queue, sorted by severity and SLA.', link: '/incidents', action: 'View Incidents', why: 'Prioritization under SLA pressure is the core SOC skill.' },
+      { id: 3, title: 'Investigate the Entity Graph', description: 'Pivot across users, IPs, devices and processes to scope the blast radius.', link: '/investigation', action: 'Open Investigation', why: 'Scoping determines whether one box or the whole tenant is compromised.' },
+      { id: 4, title: 'Hunt with KQL', description: 'Query telemetry for additional indicators of compromise.', link: '/kql', action: 'Open KQL Playground', why: 'KQL fluency separates button-clickers from real analysts.' },
+      { id: 5, title: 'Measure Operations', description: 'Review MTTD, MTTR and false-positive rate.', link: '/metrics', action: 'View Metrics', why: 'You manage what you measure — outcomes, not activity.' },
     ],
   },
   engineer: {
     id: 'engineer',
-    title: "I'm a Security Engineer",
-    subtitle: 'Learn to build and tune detection rules',
+    title: "Detection Engineer",
+    subtitle: 'Build, validate and tune detections as code',
     icon: Shield,
     color: 'purple',
+    cert: 'Aligns with SC-200',
     steps: [
-      {
-        id: 1,
-        title: 'Study Existing Rules',
-        description: 'Examine the production-ready detection rules and their structure.',
-        link: '/rules',
-        action: 'Browse Rules',
-        tip: 'Pay attention to normalization patterns, thresholds, and false positive handling.',
-      },
-      {
-        id: 2,
-        title: 'Understand MITRE Mapping',
-        description: 'Learn how rules map to MITRE ATT&CK tactics and techniques.',
-        link: '/mitre',
-        action: 'View Coverage',
-        tip: 'Good coverage requires multiple detections per technique for defense in depth.',
-      },
-      {
-        id: 3,
-        title: 'Test with KQL Playground',
-        description: 'Write and test detection queries against sample data.',
-        link: '/kql',
-        action: 'Write Queries',
-        tip: 'Use templates from existing rules as starting points for new detections.',
-      },
-      {
-        id: 4,
-        title: 'Validate with Simulations',
-        description: 'Run attack simulations to verify your detections fire correctly.',
-        link: '/simulator',
-        action: 'Test Detections',
-        tip: 'Simulations help identify gaps and tune thresholds before production deployment.',
-      },
-      {
-        id: 5,
-        title: 'Monitor Performance',
-        description: 'Review metrics to track detection quality and operational impact.',
-        link: '/metrics',
-        action: 'Check Metrics',
-        tip: 'Balance detection rate with false positive rate for optimal SOC efficiency.',
-      },
+      { id: 1, title: 'Study the Rule Catalog', description: 'Examine 16 production KQL detections, their normalization, thresholds and FP handling.', link: '/rules', action: 'Browse Rules', why: 'Good detections are explicit about noise, not just signal.' },
+      { id: 2, title: 'Map to MITRE ATT&CK', description: 'See tactic/technique coverage and the gaps.', link: '/mitre', action: 'View Coverage', why: 'Coverage-driven engineering beats ad-hoc rule writing.' },
+      { id: 3, title: 'Prototype in KQL', description: 'Write and test queries against sample tables.', link: '/kql', action: 'Write Queries', why: 'Iterate on logic before it ever reaches production.' },
+      { id: 4, title: 'Validate with Simulation', description: 'Run an attack and confirm the detection fires (Detection-as-Code assertion).', link: '/simulator', action: 'Test Detections', why: 'Untested detections are hope, not engineering.' },
+      { id: 5, title: 'Ship via Pipeline', description: 'Watch the Go CLI deploy rules to Sentinel through the CI/CD gate.', link: '/drift', action: 'See the Pipeline', why: 'Detections belong in version control and CI, like any code.' },
+    ],
+  },
+  cloudsec: {
+    id: 'cloudsec',
+    title: "Cloud Security / DevSecOps",
+    subtitle: 'Secure multi-cloud infrastructure as code',
+    icon: Server,
+    color: 'blue',
+    cert: 'Aligns with AZ-500',
+    steps: [
+      { id: 1, title: 'Understand the Architecture', description: 'Trace telemetry from Entra ID, M365, Defender, Kubernetes and AWS into Sentinel and out to containment.', link: '/architecture', action: 'View Architecture', why: 'Design fluency is what a cloud security lead probes first.' },
+      { id: 2, title: 'Read the Real IaC', description: 'KMS-encrypted CloudTrail, public-access blocks, least-privilege RBAC, OIDC trust — all live Terraform.', link: '/iac', action: 'Explore IaC', why: 'Misconfiguration prevention and secrets hygiene start at provisioning.' },
+      { id: 3, title: 'Enforce Shift-Left AppSec', description: 'Gitleaks, TFSec and Trivy gate the build on HIGH/CRITICAL findings.', link: '/appsec', action: 'View AppSec', why: 'Policy-as-code in CI is how cloud teams scale security.' },
+      { id: 4, title: 'Catch Configuration Drift', description: 'A nightly terraform plan detects out-of-band changes and opens an incident.', link: '/drift', action: 'View Drift', why: '"ClickOps" drift is one of the top cloud-breach root causes.' },
+      { id: 5, title: 'Optimize Cost (FinOps)', description: 'Model SIEM ingestion cost and hot/cold tiering trade-offs.', link: '/finops', action: 'Open FinOps', why: 'Security that ignores spend does not survive a budget review.' },
+    ],
+  },
+  attacker: {
+    id: 'attacker',
+    title: "Red Teamer",
+    subtitle: 'See attacks from the defender perspective',
+    icon: Target,
+    color: 'red',
+    cert: 'Adversary emulation',
+    steps: [
+      { id: 1, title: 'Explore Detections', description: 'Browse what is detected and how.', link: '/rules', action: 'View Rules', why: 'Know the tripwires before you move.' },
+      { id: 2, title: 'Find Coverage Gaps', description: 'Use the MITRE matrix to spot blind spots.', link: '/mitre', action: 'Open MITRE', why: 'Gaps are where real adversaries operate.' },
+      { id: 3, title: 'Run a Simulation', description: 'Emulate an attack and watch the telemetry it generates.', link: '/simulator', action: 'Open Simulator', why: 'Understanding telemetry is half of evasion and half of detection.' },
+      { id: 4, title: 'Study Detection Logic', description: 'Read the KQL to understand triggering patterns.', link: '/kql', action: 'Analyze Queries', why: 'The logic reveals both strengths and bypasses.' },
+      { id: 5, title: 'Review Threat Intel', description: 'See global IOCs and attack patterns.', link: '/threat-map', action: 'View Threat Map', why: 'Intel-informed emulation mirrors real campaigns.' },
     ],
   },
 };
 
-// Tutorial Path Card
 function PathCard({ tutorial, isSelected, onSelect }) {
   const Icon = tutorial.icon;
-  
+  const a = ACCENTS[tutorial.color];
+
   return (
     <motion.button
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onSelect(tutorial.id)}
       className={cn(
-        "w-full text-left p-6 rounded-xl border transition-all",
-        isSelected
-          ? `bg-${tutorial.color}-500/10 border-${tutorial.color}-500`
-          : 'bg-dark-800/50 border-dark-700 hover:border-dark-600'
+        'w-full rounded-xl border p-6 text-left transition-all',
+        isSelected ? a.tile : 'border-dark-700 bg-dark-800/50 hover:border-dark-600',
       )}
     >
       <div className="flex items-center gap-4">
-        <div className={cn(
-          "p-3 rounded-lg",
-          `bg-${tutorial.color}-500/20`
-        )}>
-          <Icon className={cn("w-8 h-8", `text-${tutorial.color}-500`)} />
+        <div className={cn('rounded-lg p-3', a.iconWrap)}>
+          <Icon className={cn('h-7 w-7', a.icon)} />
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold">{tutorial.title}</h3>
-          <p className="text-sm text-gray-400 mt-1">{tutorial.subtitle}</p>
+          <p className="mt-1 text-sm text-gray-400">{tutorial.subtitle}</p>
+          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-gray-300">
+            <Award className="h-3 w-3" /> {tutorial.cert}
+          </span>
         </div>
-        <ChevronRight className={cn(
-          "w-5 h-5 transition-transform",
-          isSelected && "rotate-90"
-        )} />
+        <ChevronRight className={cn('h-5 w-5 transition-transform', isSelected && 'rotate-90')} />
       </div>
     </motion.button>
   );
 }
 
-// Step Card
 function StepCard({ step, index, isComplete, onComplete }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ delay: index * 0.08 }}
       className={cn(
-        "p-5 rounded-xl border transition-all",
-        isComplete
-          ? 'bg-green-500/10 border-green-500/30'
-          : 'bg-dark-800/50 border-dark-700'
+        'rounded-xl border p-5 transition-all',
+        isComplete ? 'border-green-500/30 bg-green-500/10' : 'border-dark-700 bg-dark-800/50',
       )}
     >
       <div className="flex items-start gap-4">
         <button
           onClick={() => onComplete(step.id)}
-          className={cn(
-            "p-2 rounded-full transition-colors",
-            isComplete
-              ? 'bg-green-500 text-white'
-              : 'bg-dark-700 hover:bg-dark-600'
-          )}
+          className={cn('rounded-full p-2 transition-colors', isComplete ? 'bg-green-500 text-white' : 'bg-dark-700 hover:bg-dark-600')}
         >
-          {isComplete ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : (
-            <Circle className="w-5 h-5" />
-          )}
+          {isComplete ? <CheckCircle className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
         </button>
-        
+
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Step {step.id}</span>
-          </div>
-          <h4 className="font-semibold mt-1">{step.title}</h4>
-          <p className="text-sm text-gray-400 mt-2">{step.description}</p>
-          
+          <span className="text-sm text-gray-500">Step {step.id}</span>
+          <h4 className="mt-1 font-semibold">{step.title}</h4>
+          <p className="mt-2 text-sm text-gray-400">{step.description}</p>
+
+          {step.why && (
+            <div className="mt-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-blue-200">
+              <span className="font-semibold text-blue-300">Why it matters: </span>
+              {step.why}
+            </div>
+          )}
+
           {step.tip && (
-            <div className="mt-3 p-3 rounded-lg bg-dark-700/50 border border-dark-600">
+            <div className="mt-2 rounded-lg border border-dark-600 bg-dark-700/50 p-3">
               <p className="text-xs text-gray-400">
-                <span className="text-cyber-400 font-medium">💡 Tip:</span> {step.tip}
+                <span className="font-medium text-cyan-400">Tip: </span>
+                {step.tip}
               </p>
             </div>
           )}
-          
+
           <Link
             to={step.link}
-            className={cn(
-              "inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              "bg-cyber-500/20 text-cyber-400 hover:bg-cyber-500/30"
-            )}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/30"
           >
             {step.action}
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
@@ -261,43 +167,32 @@ export default function Tutorial() {
   const [completedSteps, setCompletedSteps] = useState({});
 
   const handleComplete = (stepId) => {
-    setCompletedSteps(prev => ({
-      ...prev,
-      [`${selectedPath}-${stepId}`]: !prev[`${selectedPath}-${stepId}`]
-    }));
+    setCompletedSteps((prev) => ({ ...prev, [`${selectedPath}-${stepId}`]: !prev[`${selectedPath}-${stepId}`] }));
   };
 
   const tutorial = selectedPath ? TUTORIALS[selectedPath] : null;
-  const progress = tutorial 
-    ? tutorial.steps.filter(s => completedSteps[`${selectedPath}-${s.id}`]).length 
-    : 0;
+  const progress = tutorial ? tutorial.steps.filter((s) => completedSteps[`${selectedPath}-${s.id}`]).length : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-3">
-          <BookOpen className="w-8 h-8 text-cyber-500" />
-          Interactive Tutorial
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="border-b border-dark-700 pb-5">
+        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300">
+            <BookOpen className="h-6 w-6" />
+          </span>
+          Learning Paths
         </h1>
-        <p className="text-gray-400 mt-1">
-          Choose your path to explore the Sentinel Detection Pack
+        <p className="mt-1 text-gray-400">
+          Role-based, hands-on tours of the platform — each step links to a live view and explains the cloud-security skill it demonstrates.
         </p>
       </div>
 
-      {/* Path Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {Object.values(TUTORIALS).map((tutorial) => (
-          <PathCard
-            key={tutorial.id}
-            tutorial={tutorial}
-            isSelected={selectedPath === tutorial.id}
-            onSelect={setSelectedPath}
-          />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Object.values(TUTORIALS).map((t) => (
+          <PathCard key={t.id} tutorial={t} isSelected={selectedPath === t.id} onSelect={setSelectedPath} />
         ))}
       </div>
 
-      {/* Selected Tutorial */}
       <AnimatePresence mode="wait">
         {tutorial && (
           <motion.div
@@ -307,24 +202,20 @@ export default function Tutorial() {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-6"
           >
-            {/* Progress */}
-            <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">{tutorial.title} Learning Path</h3>
-                <span className="text-sm text-gray-400">
-                  {progress} / {tutorial.steps.length} completed
-                </span>
+            <div className="rounded-xl border border-dark-700 bg-dark-800/50 p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-semibold">{tutorial.title} path</h3>
+                <span className="text-sm text-gray-400">{progress} / {tutorial.steps.length} completed</span>
               </div>
-              <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div className="h-2 overflow-hidden rounded-full bg-dark-700">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${(progress / tutorial.steps.length) * 100}%` }}
-                  className="h-full bg-gradient-to-r from-cyber-500 to-green-500 rounded-full"
+                  className={cn('h-full rounded-full bg-gradient-to-r', ACCENTS[tutorial.color].bar)}
                 />
               </div>
             </div>
 
-            {/* Steps */}
             <div className="space-y-4">
               {tutorial.steps.map((step, index) => (
                 <StepCard
@@ -337,31 +228,21 @@ export default function Tutorial() {
               ))}
             </div>
 
-            {/* Completion */}
             {progress === tutorial.steps.length && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-r from-green-500/20 to-cyber-500/20 rounded-xl border border-green-500/30 p-8 text-center"
+                className="rounded-xl border border-green-500/30 bg-gradient-to-r from-green-500/20 to-cyan-500/20 p-8 text-center"
               >
-                <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-                <h3 className="text-xl font-bold">Congratulations!</h3>
-                <p className="text-gray-400 mt-2">
-                  You've completed the {tutorial.title} learning path.
-                </p>
-                <div className="flex justify-center gap-4 mt-6">
-                  <button
-                    onClick={() => setCompletedSteps({})}
-                    className="px-6 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors"
-                  >
+                <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
+                <h3 className="text-xl font-bold">Path complete</h3>
+                <p className="mt-2 text-gray-400">You finished the {tutorial.title} path.</p>
+                <div className="mt-6 flex justify-center gap-4">
+                  <button onClick={() => setCompletedSteps({})} className="rounded-lg bg-dark-700 px-6 py-2 transition-colors hover:bg-dark-600">
                     Reset Progress
                   </button>
-                  <Link
-                    to="/simulator"
-                    className="px-6 py-2 rounded-lg bg-cyber-500 hover:bg-cyber-600 text-white transition-colors flex items-center gap-2"
-                  >
-                    <Play className="w-4 h-4" />
-                    Try Attack Simulator
+                  <Link to="/simulator" className="flex items-center gap-2 rounded-lg bg-cyan-500 px-6 py-2 text-white transition-colors hover:bg-cyan-600">
+                    <Play className="h-4 w-4" /> Try the Simulator
                   </Link>
                 </div>
               </motion.div>
@@ -370,39 +251,21 @@ export default function Tutorial() {
         )}
       </AnimatePresence>
 
-      {/* Quick Links */}
       {!selectedPath && (
-        <div className="bg-dark-800/50 rounded-xl border border-dark-700 p-6">
-          <h3 className="font-semibold mb-4">Quick Start</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link
-              to="/simulator"
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
-            >
-              <Zap className="w-8 h-8 text-yellow-500" />
-              <span className="text-sm font-medium">Attack Simulator</span>
-            </Link>
-            <Link
-              to="/rules"
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
-            >
-              <Shield className="w-8 h-8 text-cyber-500" />
-              <span className="text-sm font-medium">Detection Rules</span>
-            </Link>
-            <Link
-              to="/mitre"
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
-            >
-              <Target className="w-8 h-8 text-purple-500" />
-              <span className="text-sm font-medium">MITRE ATT&CK</span>
-            </Link>
-            <Link
-              to="/threat-map"
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
-            >
-              <Map className="w-8 h-8 text-red-500" />
-              <span className="text-sm font-medium">Threat Map</span>
-            </Link>
+        <div className="rounded-xl border border-dark-700 bg-dark-800/50 p-6">
+          <h3 className="mb-4 font-semibold">Quick start</h3>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {[
+              { to: '/architecture', icon: Server, color: 'text-blue-400', label: 'Architecture' },
+              { to: '/simulator', icon: Zap, color: 'text-yellow-400', label: 'Attack Simulator' },
+              { to: '/rules', icon: Shield, color: 'text-cyan-400', label: 'Detection Rules' },
+              { to: '/threat-map', icon: Map, color: 'text-red-400', label: 'Threat Map' },
+            ].map((q) => (
+              <Link key={q.to} to={q.to} className="flex flex-col items-center gap-2 rounded-lg bg-dark-700/50 p-4 transition-colors hover:bg-dark-700">
+                <q.icon className={cn('h-8 w-8', q.color)} />
+                <span className="text-sm font-medium">{q.label}</span>
+              </Link>
+            ))}
           </div>
         </div>
       )}

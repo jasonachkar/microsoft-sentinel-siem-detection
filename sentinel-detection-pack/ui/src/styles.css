@@ -96,3 +96,57 @@ body {
   outline: 2px solid rgba(59, 130, 246, 0.8);
   outline-offset: 2px;
 }
+
+/* Ambient depth: subtle radial glows behind the whole console */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 60rem at 15% -10%, rgba(59, 130, 246, 0.08), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 0%, rgba(168, 85, 247, 0.07), transparent 55%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Card lift + accent on hover for a more premium feel */
+.p-card {
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.p-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.25) !important;
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Keyboard hint chips */
+kbd {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Brand gradient text helper */
+.text-gradient-brand {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa 60%, #34d399);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* PrimeReact tags: tighten the look */
+.p-tag {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Smooth route content entrance */
+main > * {
+  animation: animate-in 0.32s ease-out both;
+}
