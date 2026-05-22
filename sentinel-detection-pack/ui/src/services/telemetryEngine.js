@@ -33,4 +33,83 @@ export const telemetryEngine = {
     actor: ['APT29', 'Lazarus Group', 'Scattered Spider', 'Unknown'][Math.floor(Math.random() * 4)],
     lastSeen: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toLocaleTimeString(),
   })),
+
+  // ---------------------------------------------------------------------------
+  // DevSecOps pipeline telemetry.
+  // NOTE: this is illustrative demo data for the portfolio UI. The shapes mirror
+  // the real output of the scanners wired in .github/workflows/sentinel-ci-cd.yaml
+  // (Gitleaks, TFSec x4 modules, Trivy) and the nightly job in
+  // .github/workflows/drift-detection.yaml. The IaC findings below are the ACTUAL
+  // misconfigurations present in this repo's Terraform, so the dashboard doubles
+  // as a real remediation backlog. Swap these generators for SARIF/artifact
+  // parsing to make the views production-real.
+  // ---------------------------------------------------------------------------
+
+  generateAppSecScan: () => {
+    const scanners = [
+      { name: 'Gitleaks', type: 'Secret scanning', status: 'pass', findings: 0, target: 'full repository history' },
+      { name: 'TFSec', type: 'IaC misconfiguration', status: 'warn', findings: 7, target: '4 Terraform modules' },
+      { name: 'Trivy', type: 'Dependency CVE (fs)', status: 'warn', findings: 5, target: 'go.sum, package-lock.json' },
+    ];
+
+    const cves = [
+      { id: 'CVE-2024-45337', pkg: 'golang.org/x/crypto', installed: 'v0.17.0', fixed: 'v0.31.0', severity: 'CRITICAL', target: 'src-cli/go.sum' },
+      { id: 'CVE-2023-39325', pkg: 'golang.org/x/net', installed: 'v0.10.0', fixed: 'v0.17.0', severity: 'HIGH', target: 'src-cli/go.sum' },
+      { id: 'CVE-2024-4068', pkg: 'braces', installed: '3.0.2', fixed: '3.0.3', severity: 'HIGH', target: 'ui/package-lock.json' },
+      { id: 'CVE-2025-22868', pkg: 'golang.org/x/oauth2', installed: 'v0.7.0', fixed: 'v0.27.0', severity: 'MEDIUM', target: 'src-cli/go.sum' },
+      { id: 'CVE-2024-4067', pkg: 'micromatch', installed: '4.0.5', fixed: '4.0.8', severity: 'MEDIUM', target: 'ui/package-lock.json' },
+    ];
+
+    // These map to real issues in the committed Terraform - see file references.
+    const iacFindings = [
+      { rule: 'general-secret-in-code', severity: 'CRITICAL', module: 'terraform-honeypot', resource: 'azurerm_windows_virtual_machine.honeypot_vm', file: 'terraform-honeypot/main.tf:49', detail: 'Admin password is hard-coded in plaintext (admin_password).' },
+      { rule: 'aws-s3-enable-bucket-encryption', severity: 'HIGH', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'CloudTrail log bucket has no server-side encryption configured.' },
+      { rule: 'aws-s3-no-public-access-block', severity: 'HIGH', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'No public access block attached to the log bucket.' },
+      { rule: 'azure-rbac-least-privilege', severity: 'HIGH', module: 'terraform-soar', resource: 'azurerm_role_assignment.soar_user_admin', file: 'terraform-soar/main.tf:39', detail: 'SOAR identity granted User Administrator at subscription scope.' },
+      { rule: 'aws-s3-enable-bucket-logging', severity: 'MEDIUM', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'Access logging is not enabled on the log bucket.' },
+      { rule: 'aws-s3-enable-versioning', severity: 'MEDIUM', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'Object versioning is not enabled for tamper protection.' },
+      { rule: 'aws-iam-no-placeholder-principal', severity: 'LOW', module: 'terraform-aws-connector', resource: 'aws_iam_role.sentinel_aws_connector', file: 'terraform-aws-connector/main.tf:43', detail: 'AssumeRole trust uses a placeholder account id (123456789012).' },
+    ];
+
+    return {
+      lastRun: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+      commit: '1ab9e4f',
+      gateBlocking: false, // TFSec steps run with soft_fail: true
+      scanners,
+      cves,
+      iacFindings,
+    };
+  },
+
+  generateDriftReport: () => ({
+    lastCheck: new Date(new Date().setHours(2, 0, 0, 0)).toISOString(),
+    nextCheck: '02:00 UTC (cron 0 2 * * *)',
+    resources: [
+      { name: 'law-sentinel-prod', type: 'OperationalInsights/workspaces', module: 'terraform', location: 'eastus', state: 'Synced', drift: 'None' },
+      { name: 'rg-secops-core', type: 'Resources/resourceGroups', module: 'terraform', location: 'eastus', state: 'Synced', drift: 'None' },
+      { name: 'logicapp-soar-isolate', type: 'Logic/workflows', module: 'terraform-soar', location: 'eastus', state: 'Synced', drift: 'None' },
+      { name: 'AzureSentinelAWSIntegrationRole', type: 'AWS.IAM/Role', module: 'terraform-aws-connector', location: 'us-east-1', state: 'Synced', drift: 'None' },
+      { name: 'sentinel-multi-cloud-trail-logs', type: 'AWS.S3/Bucket', module: 'terraform-aws-connector', location: 'us-east-1', state: 'Drift Detected', drift: 'Bucket policy modified outside Terraform (1 attribute).' },
+      { name: 'aks-cluster-prod', type: 'ContainerService/managedClusters', module: 'terraform', location: 'eastus', state: 'Drift Detected', drift: 'Node pool count changed in portal (3 -> 5).' },
+    ],
+  }),
+
+  generatePipelineRuns: () => [
+    { id: 4821, workflow: 'DevSecOps CI/CD', trigger: 'push', actor: 'jasonachkardiab', branch: 'main', result: 'success', duration: '4m 12s', when: '12 min ago' },
+    { id: 4818, workflow: 'Nightly IaC Drift Detection', trigger: 'schedule', actor: 'github-actions', branch: 'main', result: 'drift', duration: '1m 02s', when: '8 hours ago' },
+    { id: 4814, workflow: 'DevSecOps CI/CD', trigger: 'pull_request', actor: 'jasonachkardiab', branch: 'feat/soar', result: 'success', duration: '3m 58s', when: '1 day ago' },
+    { id: 4809, workflow: 'DevSecOps CI/CD', trigger: 'push', actor: 'jasonachkardiab', branch: 'main', result: 'failed', duration: '2m 09s', when: '2 days ago' },
+  ],
+
+  generateDeployerLog: () => [
+    { level: 'info', text: '🚀 Initializing Sentinel Deployment Tool (Go-SecOps)' },
+    { level: 'info', text: 'Authenticating via DefaultAzureCredential (OIDC / federated token)' },
+    { level: 'step', text: '📦 Processing Rule: EntraID_Password_Spray.yaml' },
+    { level: 'ok', text: '   -> Validated schema for: Entra ID Password Spray (Severity: High)' },
+    { level: 'step', text: '📦 Processing Rule: Credential_Dumping_LSASS_Access.yaml' },
+    { level: 'ok', text: '   -> Validated schema for: LSASS Credential Dumping (Severity: High)' },
+    { level: 'step', text: '📦 Processing Rule: Kubernetes_Suspicious_Exec.yaml' },
+    { level: 'ok', text: '   -> Validated schema for: Kubernetes Suspicious Exec (Severity: Medium)' },
+    { level: 'ok', text: '✅ Deployment execution completed. (16 rules processed)' },
+  ],
 };

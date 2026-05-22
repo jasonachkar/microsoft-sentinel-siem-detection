@@ -9,6 +9,7 @@ export default function Layout({ children }) {
       section: 'Executive View',
       items: [
         { path: '/', icon: 'pi-globe', label: 'Command Center' },
+        { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture' },
         { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps' },
         { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture' },
       ],
@@ -20,6 +21,14 @@ export default function Layout({ children }) {
         { path: '/kubernetes', icon: 'pi-box', label: 'K8s Telemetry' },
         { path: '/copilot', icon: 'pi-bolt', label: 'AI Copilot' },
         { path: '/soar', icon: 'pi-sitemap', label: 'SOAR Playbooks' },
+      ],
+    },
+    {
+      section: 'DevSecOps',
+      items: [
+        { path: '/appsec', icon: 'pi-verified', label: 'AppSec & Supply Chain' },
+        { path: '/drift', icon: 'pi-sync', label: 'IaC Drift & Pipeline' },
+        { path: '/iac', icon: 'pi-server', label: 'Infrastructure as Code' },
       ],
     },
     {

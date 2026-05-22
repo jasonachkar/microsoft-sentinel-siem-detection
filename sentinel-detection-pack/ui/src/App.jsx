@@ -19,6 +19,10 @@ import InfrastructurePosture from './components/InfrastructurePosture';
 import LivePostureDashboard from './components/LivePostureDashboard';
 import KubernetesDashboard from './components/KubernetesDashboard';
 import LiveIncidentsDashboard from './components/LiveIncidentsDashboard';
+import AppSecDashboard from './components/AppSecDashboard';
+import TerraformDrift from './components/TerraformDrift';
+import IaCExplorer from './components/IaCExplorer';
+import ArchitectureMap from './components/ArchitectureMap';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -53,6 +57,10 @@ export default function App() {
             <Route path="/copilot" element={<AICopilot />} />
             <Route path="/ai-copilot" element={<AICopilot />} />
             <Route path="/finops" element={<FinOpsDashboard />} />
+            <Route path="/appsec" element={<AppSecDashboard />} />
+            <Route path="/drift" element={<TerraformDrift />} />
+            <Route path="/iac" element={<IaCExplorer />} />
+            <Route path="/architecture" element={<ArchitectureMap />} />
             <Route path="/infrastructure" element={<InfrastructurePosture />} />
             <Route path="/posture" element={<LivePostureDashboard />} />
             <Route path="/live-posture" element={<LivePostureDashboard />} />
