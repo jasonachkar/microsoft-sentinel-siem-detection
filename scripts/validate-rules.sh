@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [[ -d "$REPO_ROOT/sentinel-detection-pack/rules" ]]; then
+  ROOT_DIR="$REPO_ROOT/sentinel-detection-pack"
+else
+  ROOT_DIR="$REPO_ROOT"
+fi
 CHECK_SAMPLES=false
 
 if [[ "${1:-}" == "--check-samples" ]]; then
@@ -10,13 +16,22 @@ fi
 
 fail=0
 
+if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+  PYTHON_BIN=python3
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+  PYTHON_BIN=python
+else
+  echo "Python 3 is required but was not found."
+  exit 1
+fi
+
 KQL_FILES=()
 while IFS= read -r file; do
   if [[ "$(basename "$file")" == ._* ]]; then
     continue
   fi
   KQL_FILES+=("$file")
-done < <(rg --files -g "*.kql" "$ROOT_DIR/rules")
+done < <(find "$ROOT_DIR/rules" -type f -name "*.kql" | sort)
 
 if [[ ${#KQL_FILES[@]} -eq 0 ]]; then
   echo "No KQL files found under $ROOT_DIR/rules"
@@ -93,26 +108,36 @@ for kql in "${KQL_FILES[@]}"; do
 done
 
 # Basic hygiene checks
-if rg -n $'\t' "$ROOT_DIR"; then
+HYGIENE_PATHS=(
+  "$ROOT_DIR/rules"
+  "$ROOT_DIR/rules-yaml"
+  "$ROOT_DIR/sample-data"
+)
+
+if rg -n '\t' "${HYGIENE_PATHS[@]}"; then
   echo "Tabs found in repository"
   fail=1
 fi
-if rg -n "[ \t]+$" "$ROOT_DIR"; then
+if rg -n "[ \t]+$" "${HYGIENE_PATHS[@]}"; then
   echo "Trailing whitespace found in repository"
   fail=1
 fi
-if rg -n "\r$" "$ROOT_DIR"; then
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) check_crlf=false ;;
+  *) check_crlf=true ;;
+esac
+if $check_crlf && rg -n "\r$" "${HYGIENE_PATHS[@]}"; then
   echo "CRLF line endings found in repository"
   fail=1
 fi
-if rg -n -g '!scripts/**' "BEGIN (RSA|OPENSSH|PRIVATE) KEY|AKIA[0-9A-Z]{16}|-----BEGIN" "$ROOT_DIR"; then
+if rg -n "BEGIN (RSA|OPENSSH|PRIVATE) KEY|AKIA[0-9A-Z]{16}|-----BEGIN" "${HYGIENE_PATHS[@]}"; then
   echo "Potential secret material found in repository"
   fail=1
 fi
 
 if $CHECK_SAMPLES; then
   export ROOT_DIR
-  python3 - <<'PY'
+  "$PYTHON_BIN" - <<'PY'
 import json
 import os
 import pathlib

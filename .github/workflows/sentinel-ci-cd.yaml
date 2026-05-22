@@ -66,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-rules-bundle
-          path: bundles/
+          path: sentinel-detection-pack/bundles/
           retention-days: 14
 
   deploy-to-sentinel:

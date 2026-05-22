@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [[ -d "$REPO_ROOT/sentinel-detection-pack/rules-yaml" ]]; then
+  ROOT_DIR="$REPO_ROOT/sentinel-detection-pack"
+else
+  ROOT_DIR="$REPO_ROOT"
+fi
 export ROOT_DIR
 
-python3 - <<'PY'
+if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+  PYTHON_BIN=python3
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+  PYTHON_BIN=python
+else
+  echo "Python 3 is required but was not found."
+  exit 1
+fi
+
+"$PYTHON_BIN" - <<'PY'
 import json
 import os
 from pathlib import Path
