@@ -58,13 +58,45 @@ jobs:
           additional_args: --minimum-severity HIGH
           working_directory: ./terraform-aws-connector
 
-      - name: Trivy Vulnerability Scanner (AppSec)
+      - name: TFSec Azure Policy Module Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: false
+          additional_args: --minimum-severity HIGH
+          working_directory: ./terraform-policy
+
+      # Trivy results are emitted as SARIF and published to the GitHub
+      # Security > Code scanning tab (not just the build log).
+      - name: Trivy Filesystem Scan (dependencies → SARIF)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           ignore-unfixed: true
-          format: 'table'
+          format: 'sarif'
+          output: 'trivy-fs.sarif'
           severity: 'CRITICAL,HIGH'
+
+      - name: Trivy IaC / Config Scan (→ SARIF)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          format: 'sarif'
+          output: 'trivy-config.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Publish Trivy dependency findings
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs.sarif'
+          category: trivy-fs
+
+      - name: Publish Trivy IaC findings
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-config.sarif'
+          category: trivy-config
 
   validate-and-build:
     name: Validate & Bundle Rules

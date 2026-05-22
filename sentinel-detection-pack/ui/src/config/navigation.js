@@ -14,6 +14,7 @@ export const navSections = [
     section: 'Governance',
     items: [
       { path: '/compliance', icon: 'pi-check-square', label: 'Compliance & Controls', keywords: 'cis nist csf benchmark audit controls' },
+      { path: '/decisions', icon: 'pi-book', label: 'Architecture Decisions', keywords: 'adr rationale why trade-off design' },
     ],
   },
   {

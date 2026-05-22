@@ -20,9 +20,9 @@ const nistFunctions = [
   },
   {
     fn: 'Protect',
-    pct: 90,
+    pct: 92,
     color: 'bg-emerald-500',
-    controls: ['KMS encryption + key rotation', 'S3 public-access block', 'Least-privilege RBAC (RG-scoped)', 'Secrets via random_password + OIDC', 'Shift-left IaC / dependency scanning'],
+    controls: ['Azure Policy deny/audit (prevention)', 'KMS encryption + key rotation', 'S3 public-access block', 'Least-privilege RBAC (RG-scoped)', 'Secrets via random_password + OIDC', 'Shift-left IaC / dependency scanning'],
   },
   {
     fn: 'Detect',
@@ -60,6 +60,9 @@ const cisControls = [
   { id: '8.1', area: 'Key mgmt', control: 'KMS key rotation enabled', status: 'Pass', evidence: 'aws_kms_key.enable_key_rotation = true' },
   { id: 'CI.1', area: 'DevSecOps', control: 'No secrets in source; IaC scanned pre-merge', status: 'Pass', evidence: 'Gitleaks + TFSec gate (blocking HIGH), random_password' },
   { id: '6.1', area: 'Network', control: 'Restrict NSG ingress / isolate on incident', status: 'Partial', evidence: 'SOAR isolate-host playbook (response control)' },
+  { id: '3.1az', area: 'Storage', control: 'Enforce HTTPS-only on storage (deny at deploy)', status: 'Pass', evidence: 'terraform-policy — deny-storage-without-secure-transfer' },
+  { id: '3.8az', area: 'Storage', control: 'Deny public network access on storage', status: 'Pass', evidence: 'terraform-policy — deny-storage-public-network-access' },
+  { id: 'GOV.1', area: 'Governance', control: 'Continuous baseline (Microsoft Cloud Security Benchmark)', status: 'Pass', evidence: 'terraform-policy — MCSB initiative assignment' },
 ];
 
 const remediations = [
@@ -144,9 +147,10 @@ export default function ComplianceCenter() {
         </DataTable>
         <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-xs text-blue-200">
           <span className="font-semibold text-blue-300">Detect vs Prevent: </span>
-          Controls marked <span className="font-semibold">Detect</span> provide detection coverage, not hard prevention. A
-          production rollout pairs them with Azure Policy and Conditional Access for enforcement — the distinction matters when
-          you report posture to an auditor.
+          Controls marked <span className="font-semibold">Detect</span> provide detection coverage, not hard prevention.
+          Preventative enforcement is wired via <span className="font-mono">terraform-policy</span> (Azure Policy deny/audit +
+          the Microsoft Cloud Security Benchmark initiative); identity controls are best paired with Conditional Access. The
+          detect/prevent distinction is exactly what an auditor expects you to articulate.
         </div>
       </Card>
 

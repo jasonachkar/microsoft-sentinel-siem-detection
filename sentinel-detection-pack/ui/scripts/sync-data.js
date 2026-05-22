@@ -162,6 +162,7 @@ const sourceManifest = [
   { path: 'terraform-aws-connector/main.tf', group: 'AWS CloudTrail Connector', language: 'hcl', deploys: 'KMS-encrypted CloudTrail S3 bucket, public-access block, OIDC AssumeRole for cross-cloud ingestion.' },
   { path: 'terraform-soar/main.tf', group: 'SOAR Logic Apps', language: 'hcl', deploys: 'Isolate-host Logic App with system-assigned identity, RG-scoped Network Contributor (least privilege).' },
   { path: 'terraform-honeypot/main.tf', group: 'Ephemeral Honeypot', language: 'hcl', deploys: 'Throwaway Windows VM + network, credential generated at apply time (never committed).' },
+  { path: 'terraform-policy/main.tf', group: 'Azure Policy (Prevention)', language: 'hcl', deploys: 'Custom deny/audit policy definitions + Microsoft Cloud Security Benchmark initiative assignment.' },
   { path: '.github/workflows/sentinel-ci-cd.yaml', group: 'CI/CD Pipeline', language: 'yaml', deploys: 'Shift-left scans (Gitleaks/TFSec/Trivy), rule validation, Atomic Red Team assertion, OIDC deploy.' },
   { path: '.github/workflows/drift-detection.yaml', group: 'CI/CD Pipeline', language: 'yaml', deploys: 'Nightly terraform plan -detailed-exitcode against remote state; opens an incident issue on drift.' },
   { path: 'src-cli/main.go', group: 'Go Deployment CLI', language: 'go', deploys: 'CLI entrypoint: walks YAML rules, dry-run by default, -apply pushes to Sentinel.' },

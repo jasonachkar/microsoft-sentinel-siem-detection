@@ -25,6 +25,7 @@ import IaCExplorer from './components/IaCExplorer';
 import ArchitectureMap from './components/ArchitectureMap';
 import DetectionDeepDive from './components/DetectionDeepDive';
 import ComplianceCenter from './components/ComplianceCenter';
+import ArchitectureDecisions from './components/ArchitectureDecisions';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/architecture" element={<ArchitectureMap />} />
             <Route path="/detection-engineering" element={<DetectionDeepDive />} />
             <Route path="/compliance" element={<ComplianceCenter />} />
+            <Route path="/decisions" element={<ArchitectureDecisions />} />
             <Route path="/infrastructure" element={<InfrastructurePosture />} />
             <Route path="/posture" element={<LivePostureDashboard />} />
             <Route path="/live-posture" element={<LivePostureDashboard />} />
