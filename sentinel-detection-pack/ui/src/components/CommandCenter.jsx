@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from 'primereact/card';
+import { Column } from 'primereact/column';
+import { DataTable } from 'primereact/datatable';
 import { Divider } from 'primereact/divider';
 import { MeterGroup } from 'primereact/metergroup';
 import { Tag } from 'primereact/tag';
 import { Timeline } from 'primereact/timeline';
 import rulesData from '../data/rules.json';
 import { liveApiService } from '../services/liveApiService';
+import { telemetryEngine } from '../services/telemetryEngine';
 
 const pipelineEvents = [
   { status: 'Code Commit', date: 'Automated Trigger', icon: 'pi pi-github', color: '#64748b', desc: 'Security engineer pushes KQL, Terraform, API, or UI changes to main.' },
@@ -24,9 +27,11 @@ const appSecMeters = [
 
 export default function CommandCenter() {
   const [liveState, setLiveState] = useState({ incidents: [], k8s: [], resources: [], findings: [], loading: true });
+  const [tiData, setTiData] = useState([]);
 
   useEffect(() => {
     let mounted = true;
+    setTiData(telemetryEngine.generateThreatIntel());
     Promise.all([
       liveApiService.getIncidents(),
       liveApiService.getKubernetesEvents(),
@@ -148,6 +153,19 @@ export default function CommandCenter() {
               <span>Last Scan: {new Date().toLocaleDateString()}</span>
               <span>Pipeline Assertion: PASSED</span>
             </div>
+          </Card>
+
+          <Card title="Active Threat Intel Ingestion" className="mt-6 border border-gray-700 bg-gray-900 shadow-xl">
+            <DataTable value={tiData} rows={4} className="p-datatable-sm">
+              <Column field="indicator" header="Indicator (IOC)" className="font-mono text-red-400" />
+              <Column field="actor" header="Threat Actor" />
+              <Column
+                field="confidence"
+                header="Confidence"
+                body={(row) => <Tag value={`${row.confidence}%`} severity={row.confidence > 80 ? 'danger' : 'warning'} />}
+              />
+              <Column field="lastSeen" header="Last Seen" className="text-sm text-gray-500" />
+            </DataTable>
           </Card>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
