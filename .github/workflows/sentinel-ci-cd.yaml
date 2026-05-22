@@ -52,6 +52,14 @@ jobs:
           soft_fail: true
           working_directory: ./terraform-aws-connector
 
+      - name: Trivy Vulnerability Scanner (AppSec)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
   validate-and-build:
     name: Validate & Bundle Rules
     needs: security-scans

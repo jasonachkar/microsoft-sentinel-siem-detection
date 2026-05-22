@@ -15,21 +15,43 @@ const primeNavIcon = (iconClass) => function PrimeNavIcon({ className }) {
   return <i className={cn(iconClass, className)} />;
 };
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: Activity },
-  { name: 'Threat Map', href: '/threat-map', icon: Map },
-  { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
-  { name: 'Detection Rules', href: '/rules', icon: Shield },
-  { name: 'MITRE ATT&CK', href: '/mitre', icon: Target },
-  { name: 'Investigation', href: '/investigation', icon: Search },
-  { name: 'KQL Playground', href: '/kql', icon: Database },
-  { name: 'Metrics', href: '/metrics', icon: BarChart3 },
-  { name: 'Attack Simulator', href: '/simulator', icon: Zap },
-  { name: 'Active Defense', href: '/soar', icon: primeNavIcon('pi pi-bolt') },
-  { name: 'AI Copilot', href: '/ai-copilot', icon: primeNavIcon('pi pi-sparkles') },
-  { name: 'Security FinOps', href: '/finops', icon: primeNavIcon('pi pi-dollar') },
-  { name: 'Tutorial', href: '/tutorial', icon: BookOpen },
+const navigationGroups = [
+  {
+    name: 'Executive Posture',
+    items: [
+      { name: 'Command Center', href: '/', icon: primeNavIcon('pi pi-globe') },
+      { name: 'Security FinOps', href: '/finops', icon: primeNavIcon('pi pi-dollar') },
+      { name: 'Infrastructure', href: '/infrastructure', icon: primeNavIcon('pi pi-sitemap') },
+      { name: 'Live IaC Posture', href: '/live-posture', icon: primeNavIcon('pi pi-cloud') },
+      { name: 'Kubernetes', href: '/kubernetes', icon: primeNavIcon('pi pi-box') },
+      { name: 'Metrics', href: '/metrics', icon: BarChart3 },
+    ],
+  },
+  {
+    name: 'Active Defense',
+    items: [
+      { name: 'Live Incidents', href: '/live-incidents', icon: AlertTriangle },
+      { name: 'Incident Board', href: '/incidents', icon: primeNavIcon('pi pi-table') },
+      { name: 'AI Copilot', href: '/ai-copilot', icon: primeNavIcon('pi pi-sparkles') },
+      { name: 'SOAR Playbooks', href: '/soar', icon: primeNavIcon('pi pi-bolt') },
+      { name: 'Investigation', href: '/investigation', icon: Search },
+    ],
+  },
+  {
+    name: 'Engineering',
+    items: [
+      { name: 'Detection Rules', href: '/rules', icon: Shield },
+      { name: 'MITRE ATT&CK', href: '/mitre', icon: Target },
+      { name: 'Threat Map', href: '/threat-map', icon: Map },
+      { name: 'Attack Simulator', href: '/simulator', icon: Zap },
+      { name: 'KQL Playground', href: '/kql', icon: Database },
+      { name: 'Legacy Dashboard', href: '/dashboard', icon: Activity },
+      { name: 'Tutorial', href: '/tutorial', icon: BookOpen },
+    ],
+  },
 ];
+
+const navigation = navigationGroups.flatMap((group) => group.items);
 
 // Notification Panel Component
 function NotificationPanel({ isOpen, onClose, notifications, onMarkRead, onDismiss, onClear }) {
@@ -309,34 +331,45 @@ export default function Layout({ children }) {
           "p-2 sm:p-4 space-y-1 overflow-y-auto",
           sidebarCollapsed ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-200px)]'
         )}>
-          {navigation.map((item, index) => {
-            const isActive = location.pathname === item.href;
-            const Icon = item.icon;
-            
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                title={sidebarCollapsed ? item.name : undefined}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200",
-                  sidebarCollapsed && "justify-center",
-                  isActive
-                    ? 'bg-cyber-500/20 text-cyber-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white'
-                )}
-              >
-                <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0", isActive && "text-cyber-500")} />
-                {!sidebarCollapsed && (
-                  <>
-                    <span className="truncate">{item.name}</span>
-                    {isActive && <ChevronRight className="w-4 h-4 ml-auto text-cyber-500 flex-shrink-0" />}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+          {navigationGroups.map((group) => (
+            <div key={group.name} className="space-y-1">
+              {!sidebarCollapsed && (
+                <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  {group.name}
+                </div>
+              )}
+              {group.items.map((item) => {
+                const isActive = item.href === '/'
+                  ? location.pathname === '/'
+                  : location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    title={sidebarCollapsed ? `${group.name}: ${item.name}` : undefined}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200",
+                      sidebarCollapsed && "justify-center",
+                      isActive
+                        ? 'bg-cyber-500/20 text-cyber-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
+                    <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0", isActive && "text-cyber-500")} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <span className="truncate">{item.name}</span>
+                        {isActive && <ChevronRight className="w-4 h-4 ml-auto text-cyber-500 flex-shrink-0" />}
+                      </>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Live Events Counter */}

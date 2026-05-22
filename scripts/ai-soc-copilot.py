@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import soc_chatops
 
 # In a real environment, use the official OpenAI or Azure AI SDKs.
 # import openai
@@ -36,6 +37,10 @@ class GenAITriageBot:
 
         return {
             "confidence_score": 94,
+            "summary": (
+                "The encoded PowerShell command matches known lateral movement patterns. "
+                "The account 'socadmin' on 'vm-honeypot-01' executed a Base64 payload."
+            ),
             "analysis": (
                 "The encoded PowerShell command matches known lateral movement patterns. "
                 "The account 'socadmin' on 'vm-honeypot-01' executed a Base64 payload likely "
@@ -56,6 +61,12 @@ async def run_copilot():
     for incident in incidents:
         report = await bot.generate_triage_report(incident)
         bot.update_sentinel_incident(incident["id"], report)
+        soc_chatops.send_to_soc_channel(
+            incident["id"],
+            incident["severity"],
+            incident["title"],
+            report["summary"],
+        )
 
 
 if __name__ == "__main__":

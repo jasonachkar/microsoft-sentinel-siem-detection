@@ -5,7 +5,9 @@ terraform {
   }
 }
 
-provider "azurerm" { features {} }
+provider "azurerm" {
+  features {}
+}
 
 resource "azurerm_resource_group" "honeypot" {
   name     = "rg-sentinel-honeypot-temp"
@@ -39,12 +41,12 @@ resource "azurerm_network_interface" "nic" {
 }
 
 resource "azurerm_windows_virtual_machine" "honeypot_vm" {
-  name                = "vm-honeypot-01"
-  resource_group_name = azurerm_resource_group.honeypot.name
-  location            = azurerm_resource_group.honeypot.location
-  size                = "Standard_B2s"
-  admin_username      = "socadmin"
-  admin_password      = "REDACTED_ROTATED_CREDENTIAL" # Temporary, destroyed after test
+  name                  = "vm-honeypot-01"
+  resource_group_name   = azurerm_resource_group.honeypot.name
+  location              = azurerm_resource_group.honeypot.location
+  size                  = "Standard_B2s"
+  admin_username        = "socadmin"
+  admin_password        = "REDACTED_ROTATED_CREDENTIAL" # Temporary, destroyed after test
   network_interface_ids = [azurerm_network_interface.nic.id]
 
   os_disk {

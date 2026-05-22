@@ -10,6 +10,7 @@ Write-Host "--------------------------------------------------------"
 $ExpectedArchitecture = @{
     # CI/CD Pipeline
     ".github\workflows\sentinel-ci-cd.yaml" = "File"
+    ".github\workflows\drift-detection.yaml" = "File"
 
     # Core Automation Scripts
     "scripts\validate-rules.sh"             = "File"
@@ -19,6 +20,8 @@ $ExpectedArchitecture = @{
     "scripts\threat-intel-ingest.py"        = "File"
     "scripts\ai-soc-copilot.py"             = "File"
     "scripts\assert-detection.py"           = "File"
+    "scripts\soc-chatops.py"                = "File"
+    "scripts\soc_chatops.py"                = "File"
 
     # Custom Go Deployment CLI
     "src-cli\main.go"                       = "File"
@@ -43,9 +46,19 @@ $ExpectedArchitecture = @{
     "sentinel-detection-pack\rules-yaml\cloud\Kubernetes_Suspicious_Exec.yaml" = "File"
 
     # PrimeReact Dashboards
-    "sentinel-detection-pack\ui\src\components\SoarDashboard.jsx"   = "File"
-    "sentinel-detection-pack\ui\src\components\AICopilot.jsx"       = "File"
-    "sentinel-detection-pack\ui\src\components\FinOpsDashboard.jsx" = "File"
+    "sentinel-detection-pack\ui\src\services\liveApiService.js"                    = "File"
+    "sentinel-detection-pack\ui\src\components\CommandCenter.jsx"                 = "File"
+    "sentinel-detection-pack\ui\src\components\SoarDashboard.jsx"                 = "File"
+    "sentinel-detection-pack\ui\src\components\AICopilot.jsx"                     = "File"
+    "sentinel-detection-pack\ui\src\components\FinOpsDashboard.jsx"               = "File"
+    "sentinel-detection-pack\ui\src\components\InfrastructurePosture.jsx"         = "File"
+    "sentinel-detection-pack\ui\src\components\LivePostureDashboard.jsx"          = "File"
+    "sentinel-detection-pack\ui\src\components\KubernetesDashboard.jsx"           = "File"
+    "sentinel-detection-pack\ui\src\components\LiveIncidentsDashboard.jsx"        = "File"
+
+    # Live Azure Function API
+    "sentinel-detection-pack\functions\SentinelLiveApi\Services\LiveEnvironmentService.cs"   = "File"
+    "sentinel-detection-pack\functions\SentinelLiveApi\Functions\LiveEnvironmentFunctions.cs" = "File"
 }
 
 $ErrorsFound = 0

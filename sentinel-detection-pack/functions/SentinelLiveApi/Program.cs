@@ -11,6 +11,7 @@ var host = new HostBuilder()
     {
         // Singleton query service reuses the LogsQueryClient and workspace config.
         services.AddSingleton<LogAnalyticsQueryService>();
+        services.AddSingleton<LiveEnvironmentService>();
     })
     .Build();
 

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
+import CommandCenter from './components/CommandCenter';
 import Dashboard from './components/Dashboard';
 import ThreatMap from './components/ThreatMap';
 import Incidents from './components/Incidents';
@@ -14,6 +15,10 @@ import Tutorial from './components/Tutorial';
 import SoarDashboard from './components/SoarDashboard';
 import AICopilot from './components/AICopilot';
 import FinOpsDashboard from './components/FinOpsDashboard';
+import InfrastructurePosture from './components/InfrastructurePosture';
+import LivePostureDashboard from './components/LivePostureDashboard';
+import KubernetesDashboard from './components/KubernetesDashboard';
+import LiveIncidentsDashboard from './components/LiveIncidentsDashboard';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -31,10 +36,12 @@ export default function App() {
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<CommandCenter />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/threat-map" element={<ThreatMap />} />
             <Route path="/incidents" element={<Incidents />} />
             <Route path="/incidents/:incidentId" element={<Incidents />} />
+            <Route path="/live-incidents" element={<LiveIncidentsDashboard />} />
             <Route path="/rules" element={<RulesCatalog />} />
             <Route path="/rules/:ruleId" element={<RulesCatalog />} />
             <Route path="/mitre" element={<MitreNavigator />} />
@@ -45,6 +52,9 @@ export default function App() {
             <Route path="/soar" element={<SoarDashboard />} />
             <Route path="/ai-copilot" element={<AICopilot />} />
             <Route path="/finops" element={<FinOpsDashboard />} />
+            <Route path="/infrastructure" element={<InfrastructurePosture />} />
+            <Route path="/live-posture" element={<LivePostureDashboard />} />
+            <Route path="/kubernetes" element={<KubernetesDashboard />} />
             <Route path="/tutorial" element={<Tutorial />} />
           </Routes>
         </Layout>
