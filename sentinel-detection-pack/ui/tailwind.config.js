@@ -8,6 +8,17 @@ export default {
   theme: {
     extend: {
       colors: {
+        soc: {
+          bg: '#0b0f19',
+          panel: '#111827',
+          border: '#1e293b',
+          text: '#e2e8f0',
+          muted: '#94a3b8',
+          accent: '#3b82f6',
+          danger: '#ef4444',
+          warning: '#f59e0b',
+          success: '#10b981'
+        },
         cyber: {
           50: '#f0fdfa',
           100: '#ccfbf1',

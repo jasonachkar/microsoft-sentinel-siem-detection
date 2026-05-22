@@ -50,9 +50,11 @@ export default function App() {
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/simulator" element={<AttackSimulator />} />
             <Route path="/soar" element={<SoarDashboard />} />
+            <Route path="/copilot" element={<AICopilot />} />
             <Route path="/ai-copilot" element={<AICopilot />} />
             <Route path="/finops" element={<FinOpsDashboard />} />
             <Route path="/infrastructure" element={<InfrastructurePosture />} />
+            <Route path="/posture" element={<LivePostureDashboard />} />
             <Route path="/live-posture" element={<LivePostureDashboard />} />
             <Route path="/kubernetes" element={<KubernetesDashboard />} />
             <Route path="/tutorial" element={<Tutorial />} />
