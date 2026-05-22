@@ -9,6 +9,7 @@ import {
   ExternalLink, Clock
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
+import { liveApiService } from '../services/liveApiService';
 import { cn, formatRelativeTime, getSeverityBadge } from '../services/utils';
 
 const primeNavIcon = (iconClass) => function PrimeNavIcon({ className }) {
@@ -178,6 +179,7 @@ export default function Layout({ children }) {
     markNotificationRead,
     clearNotifications,
     liveEvents,
+    setConnectionStatus,
     sidebarCollapsed,
     toggleSidebar
   } = useAppStore();
@@ -186,6 +188,26 @@ export default function Layout({ children }) {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
+
+  // Keep the sidebar connection indicator in sync with the live Azure Function API.
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkApiStatus = async () => {
+      const status = await liveApiService.getApiStatus();
+      if (!cancelled) {
+        setConnectionStatus(status.connected ? 'connected' : 'disconnected');
+      }
+    };
+
+    checkApiStatus();
+    const interval = window.setInterval(checkApiStatus, 60000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [setConnectionStatus]);
 
   // Request notification permission
   useEffect(() => {

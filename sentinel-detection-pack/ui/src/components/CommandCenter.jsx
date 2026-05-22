@@ -23,7 +23,7 @@ const appSecMeters = [
 ];
 
 export default function CommandCenter() {
-  const [liveState, setLiveState] = useState({ incidents: [], k8s: [], resources: [], loading: true });
+  const [liveState, setLiveState] = useState({ incidents: [], k8s: [], resources: [], findings: [], loading: true });
 
   useEffect(() => {
     let mounted = true;
@@ -31,12 +31,14 @@ export default function CommandCenter() {
       liveApiService.getIncidents(),
       liveApiService.getKubernetesEvents(),
       liveApiService.getInfrastructurePosture(),
-    ]).then(([incidents, k8s, resources]) => {
+      liveApiService.getPostureFindings(),
+    ]).then(([incidents, k8s, resources, findings]) => {
       if (!mounted) return;
       setLiveState({
         incidents: Array.isArray(incidents) ? incidents : [],
         k8s: Array.isArray(k8s) ? k8s : [],
         resources: Array.isArray(resources) ? resources : [],
+        findings: Array.isArray(findings) ? findings : [],
         loading: false,
       });
     });
@@ -50,7 +52,11 @@ export default function CommandCenter() {
     liveIncidents: liveState.incidents.length,
     k8sEvents: liveState.k8s.length,
     terraformResources: liveState.resources.length,
-  }), [liveState.incidents.length, liveState.k8s.length, liveState.resources.length]);
+    postureFindings: liveState.findings.length,
+    highFindings: liveState.findings.filter((finding) => (finding.severity || finding.Severity) === 'High').length,
+  }), [liveState.findings, liveState.incidents.length, liveState.k8s.length, liveState.resources.length]);
+
+  const topFindings = liveState.findings.slice(0, 5);
 
   const customizedMarker = (item) => (
     <span
@@ -150,12 +156,12 @@ export default function CommandCenter() {
               <div className="text-3xl font-black text-blue-300">{stats.activeRules}</div>
             </div>
             <div className="rounded-lg border border-dark-700 bg-dark-900 p-4 text-center">
-              <div className="mb-1 text-xs uppercase text-gray-400">Live Incidents</div>
-              <div className="text-3xl font-black text-red-300">{stats.liveIncidents}</div>
+              <div className="mb-1 text-xs uppercase text-gray-400">Actual Findings</div>
+              <div className="text-3xl font-black text-red-300">{stats.postureFindings}</div>
             </div>
             <div className="rounded-lg border border-dark-700 bg-dark-900 p-4 text-center">
-              <div className="mb-1 text-xs uppercase text-gray-400">K8s Events</div>
-              <div className="text-3xl font-black text-purple-300">{stats.k8sEvents}</div>
+              <div className="mb-1 text-xs uppercase text-gray-400">High Severity</div>
+              <div className="text-3xl font-black text-orange-300">{stats.highFindings}</div>
             </div>
             <div className="rounded-lg border border-dark-700 bg-dark-900 p-4 text-center">
               <div className="mb-1 text-xs uppercase text-gray-400">SOAR Playbooks</div>
@@ -170,10 +176,34 @@ export default function CommandCenter() {
           <Divider />
           <div className="grid gap-2 text-sm text-gray-400">
             <div><strong className="text-gray-200">Live API:</strong> C# Azure Functions backed by Log Analytics and Resource Graph.</div>
-            <div><strong className="text-gray-200">Posture rows:</strong> {stats.terraformResources || 'awaiting Azure auth'}</div>
+            <div><strong className="text-gray-200">Azure resources:</strong> {stats.terraformResources || 'awaiting Azure auth'}</div>
+            <div><strong className="text-gray-200">Sentinel incidents:</strong> {stats.liveIncidents}</div>
           </div>
         </Card>
       </div>
+
+      <Card title="Top Actual Azure Issues" className="border border-dark-700 bg-dark-900 shadow-xl">
+        {topFindings.length === 0 ? (
+          <div className="text-sm text-gray-400">No posture findings returned by Azure Resource Graph.</div>
+        ) : (
+          <div className="grid gap-3">
+            {topFindings.map((finding) => {
+              const severity = finding.severity || finding.Severity || 'Info';
+              const tagSeverity = severity === 'High' ? 'danger' : severity === 'Medium' ? 'warning' : 'info';
+              return (
+                <div key={`${finding.name}-${finding.issue}`} className="rounded-lg border border-dark-700 bg-dark-950 p-4">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-semibold text-gray-100">{finding.issue}</div>
+                    <Tag severity={tagSeverity} value={severity} />
+                  </div>
+                  <div className="font-mono text-sm text-blue-300">{finding.name}</div>
+                  <div className="mt-1 text-sm text-gray-400">{finding.recommendation}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

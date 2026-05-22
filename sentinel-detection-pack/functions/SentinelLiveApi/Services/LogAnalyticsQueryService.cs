@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Azure;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Monitor.Query;
 using Azure.Monitor.Query.Models;
@@ -21,7 +22,7 @@ public class LogAnalyticsQueryService
     public LogAnalyticsQueryService()
     {
         // Use DefaultAzureCredential so the Function App managed identity is used in Azure.
-        _client = new LogsQueryClient(new DefaultAzureCredential());
+        _client = new LogsQueryClient(CreateCredential());
         // Workspace customer ID is required to issue Log Analytics queries.
         _workspaceId = Environment.GetEnvironmentVariable("LOG_ANALYTICS_WORKSPACE_ID") ?? string.Empty;
         var timeoutRaw = Environment.GetEnvironmentVariable("LOG_ANALYTICS_QUERY_TIMEOUT_SECONDS");
@@ -105,5 +106,13 @@ public class LogAnalyticsQueryService
         return ex.Message.Contains("Failed to resolve table", StringComparison.OrdinalIgnoreCase)
                || ex.Message.Contains("Could not resolve table", StringComparison.OrdinalIgnoreCase)
                || ex.Message.Contains("Semantic error", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static TokenCredential CreateCredential()
+    {
+        return new ChainedTokenCredential(
+            new AzureCliCredential(),
+            new ManagedIdentityCredential(new ManagedIdentityCredentialOptions()),
+            new EnvironmentCredential());
     }
 }

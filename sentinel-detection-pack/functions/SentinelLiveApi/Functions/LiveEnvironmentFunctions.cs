@@ -80,4 +80,30 @@ public class LiveEnvironmentFunctions
 
         return response;
     }
+
+    /// <summary>
+    /// Returns real cloud posture findings from Azure Resource Graph.
+    /// </summary>
+    [Function("GetLivePostureFindings")]
+    public async Task<HttpResponseData> GetLivePostureFindings(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "live/posture-findings")] HttpRequestData req,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Fetching live infrastructure posture findings.");
+        var response = req.CreateResponse(HttpStatusCode.OK);
+
+        try
+        {
+            var data = await _envService.GetInfrastructureFindingsAsync(cancellationToken);
+            await response.WriteAsJsonAsync(data, cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch live infrastructure posture findings.");
+            response.StatusCode = HttpStatusCode.ServiceUnavailable;
+            await response.WriteAsJsonAsync(Array.Empty<object>(), cancellationToken: cancellationToken);
+        }
+
+        return response;
+    }
 }

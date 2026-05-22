@@ -1,13 +1,18 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7071/api';
 
+async function getEnvelope(path) {
+  const response = await fetch(`${API_BASE_URL}${path}`);
+  const payload = await response.json().catch(() => ({}));
+  return { ok: response.ok, status: response.status, payload };
+}
+
 async function getJson(path, fallback = []) {
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`);
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
+    const { ok, status, payload } = await getEnvelope(path);
+    if (!ok) {
+      throw new Error(`Request failed with status ${status}`);
     }
 
-    const payload = await response.json();
     if (Array.isArray(payload)) {
       return payload;
     }
@@ -41,6 +46,20 @@ export const liveApiService = {
   getTableFreshness: () => getJson('/table-freshness'),
   getKubernetesEvents: () => getJson('/live/kubernetes'),
   getInfrastructurePosture: () => getJson('/live/posture'),
+  getPostureFindings: () => getJson('/live/posture-findings'),
+  getApiStatus: async () => {
+    try {
+      const { ok, payload } = await getEnvelope('/table-freshness');
+      return {
+        connected: ok,
+        status: payload?.Status || payload?.status || (ok ? 'ok' : 'error'),
+        warning: payload?.Warning || payload?.warning || null,
+      };
+    } catch (error) {
+      console.error('Live API Status Error:', error);
+      return { connected: false, status: 'offline', warning: error.message };
+    }
+  },
 };
 
 export { API_BASE_URL };
