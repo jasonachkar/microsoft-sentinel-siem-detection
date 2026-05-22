@@ -28,28 +28,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Policy gate: HIGH/CRITICAL IaC misconfigurations FAIL the build (soft_fail: false).
+      # MEDIUM/LOW are reported but non-blocking via --minimum-severity HIGH.
       - name: TFSec Core Azure Infrastructure Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          soft_fail: true
+          soft_fail: false
+          additional_args: --minimum-severity HIGH
           working_directory: ./terraform
 
       - name: TFSec Honeypot Infrastructure Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          soft_fail: true
+          soft_fail: false
+          additional_args: --minimum-severity HIGH
           working_directory: ./terraform-honeypot
 
       - name: TFSec SOAR Infrastructure Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          soft_fail: true
+          soft_fail: false
+          additional_args: --minimum-severity HIGH
           working_directory: ./terraform-soar
 
       - name: TFSec AWS Connector Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          soft_fail: true
+          soft_fail: false
+          additional_args: --minimum-severity HIGH
           working_directory: ./terraform-aws-connector
 
       - name: Trivy Vulnerability Scanner (AppSec)
@@ -143,7 +149,30 @@ jobs:
           name: sentinel-rules-bundle
           path: bundles/
 
-      - name: Execute Deployment
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Azure Login (OIDC federated credential)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Detection Rules to Sentinel (Go CLI)
+        working-directory: ./src-cli
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: "true"
         run: |
-          echo "Deployment execution via Go CLI runs here."
-          echo "SOAR playbook deployment uses terraform-soar/ and OIDC-backed Azure authentication."
+          go build -o sentinel-deployer .
+          ./sentinel-deployer \
+            -sub "${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+            -rg "${{ secrets.SENTINEL_RESOURCE_GROUP }}" \
+            -workspace "${{ secrets.SENTINEL_WORKSPACE_NAME }}" \
+            -dir ../sentinel-detection-pack/rules-yaml \
+            -apply

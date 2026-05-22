@@ -1,12 +1,27 @@
-# This Terraform module provisions a temporary Windows Honeypot for attack simulation
+# This Terraform module provisions a temporary Windows honeypot for attack simulation.
+# SECURITY: the admin credential is generated at apply time with random_password and is
+# never committed to source control. For a production deployment, persist it to Azure
+# Key Vault and reference it through a data source rather than emitting it as an output.
 terraform {
   required_providers {
     azurerm = { source = "hashicorp/azurerm", version = "~> 3.0" }
+    random  = { source = "hashicorp/random", version = "~> 3.6" }
   }
 }
 
 provider "azurerm" {
   features {}
+}
+
+# Generated at apply time - replaces the previously hard-coded plaintext password.
+resource "random_password" "honeypot_admin" {
+  length           = 24
+  special          = true
+  override_special = "!@#%*()-_=+"
+  min_lower        = 2
+  min_upper        = 2
+  min_numeric      = 2
+  min_special      = 2
 }
 
 resource "azurerm_resource_group" "honeypot" {
@@ -46,7 +61,7 @@ resource "azurerm_windows_virtual_machine" "honeypot_vm" {
   location              = azurerm_resource_group.honeypot.location
   size                  = "Standard_B2s"
   admin_username        = "socadmin"
-  admin_password        = "REDACTED_ROTATED_CREDENTIAL" # Temporary, destroyed after test
+  admin_password        = random_password.honeypot_admin.result # generated, never committed
   network_interface_ids = [azurerm_network_interface.nic.id]
 
   os_disk {
@@ -60,4 +75,10 @@ resource "azurerm_windows_virtual_machine" "honeypot_vm" {
     sku       = "2022-Datacenter"
     version   = "latest"
   }
+}
+
+output "honeypot_admin_password" {
+  description = "Generated honeypot admin password. Retrieve with: terraform output -raw honeypot_admin_password"
+  value       = random_password.honeypot_admin.result
+  sensitive   = true
 }

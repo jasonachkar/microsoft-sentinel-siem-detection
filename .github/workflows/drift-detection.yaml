@@ -1,5 +1,13 @@
 name: Nightly IaC Drift Detection
 
+# Detects out-of-band ("ClickOps") changes to the live Azure environment by running a
+# read-only `terraform plan` against remote state every night and opening a tracked
+# incident issue when reality diverges from the committed configuration.
+#
+# Required repo configuration:
+#   secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID  (OIDC federated)
+#            TFSTATE_RG, TFSTATE_STORAGE_ACCOUNT, TFSTATE_CONTAINER   (azurerm backend)
+
 on:
   schedule:
     - cron: '0 2 * * *'
@@ -23,27 +31,76 @@ jobs:
         with:
           terraform_version: "1.5.0"
 
-      - name: Terraform Init
-        working-directory: ./terraform
-        run: terraform init -backend=false
+      - name: Azure Login (OIDC federated credential)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Terraform Plan (Detailed Exit Code)
+      - name: Terraform Init (remote azurerm backend)
+        working-directory: ./terraform
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TFSTATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TFSTATE_CONTAINER }}" \
+            -backend-config="key=sentinel-core.tfstate"
+
+      # -detailed-exitcode: 0 = no changes, 1 = error, 2 = drift (plan has changes).
+      - name: Terraform Plan (detailed exit code)
         id: plan
         working-directory: ./terraform
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
-          echo "Simulating Drift Detection Check..."
-          # terraform plan -detailed-exitcode -out=tfplan
-          echo "drift_detected=false" >> $GITHUB_ENV
+          set +e
+          terraform plan -detailed-exitcode -input=false -no-color -out=tfplan
+          code=$?
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "2" ]; then
+            echo "drift_detected=true" >> "$GITHUB_ENV"
+            terraform show -no-color tfplan | head -c 60000 > drift-summary.txt
+          elif [ "$code" = "1" ]; then
+            echo "Terraform plan errored." >&2
+            exit 1
+          else
+            echo "drift_detected=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Create GitHub Issue on Drift
         if: env.drift_detected == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.create({
+            const fs = require('fs');
+            let summary = 'See workflow logs for the full plan.';
+            try { summary = fs.readFileSync('terraform/drift-summary.txt', 'utf8'); } catch (e) {}
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: "URGENT: Infrastructure Drift Detected in Azure",
-              body: "Terraform has detected manual changes in the Azure portal that are not tracked in Git. Please review the nightly pipeline logs and reconcile the state immediately.",
-              labels: ["security", "drift", "incident"]
-            })
+              title: `URGENT: Infrastructure drift detected (${new Date().toISOString().slice(0, 10)})`,
+              body: [
+                'Terraform detected changes between the committed configuration and the live Azure environment.',
+                'This usually means a manual ("ClickOps") change in the portal that is not tracked in Git.',
+                '',
+                'Reconcile by either reverting the manual change or codifying it in Terraform.',
+                '',
+                '<details><summary>Plan summary</summary>',
+                '',
+                '```',
+                summary,
+                '```',
+                '</details>',
+              ].join('\n'),
+              labels: ["security", "drift", "incident"],
+            });
