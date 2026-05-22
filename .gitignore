@@ -12,3 +12,18 @@
 # Python
 __pycache__/
 *.py[cod]
+
+# Claude Code
+.claude/
+
+# Node / UI build
+node_modules/
+dist/
+
+# Go build output
+src-cli/sentinel-deployer
+*.exe
+
+# Local terraform plugin cache / temp (validation)
+.tftmp/
+.tfcache/
