@@ -1,0 +1,100 @@
+name: Sentinel DevSecOps Pipeline
+
+# Triggers the pipeline on PRs to validate, and on merges to main to deploy.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Required permissions for OIDC authentication and security scanning
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-and-test:
+    name: Validate Rules & Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python (Required for Validation)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install pyyaml
+
+      - name: Validate Sentinel Rules
+        run: |
+          chmod +x ./scripts/validate-rules.sh
+          ./scripts/validate-rules.sh --check-samples
+
+      - name: Run Secret Leak Scan (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-bundle:
+    name: Build Rule Artifacts
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install pyyaml
+
+      - name: Bundle Detection Rules
+        run: |
+          chmod +x ./scripts/bundle-rules.sh
+          ./scripts/bundle-rules.sh
+
+      - name: Upload Bundles as Pipeline Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-rules-bundle
+          path: bundles/
+          retention-days: 14
+
+  deploy-to-sentinel:
+    name: Deploy to Azure Sentinel
+    needs: build-and-bundle
+    # Only run deployment if the code is merged into the main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Bundles Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sentinel-rules-bundle
+          path: bundles/
+
+      # Phase 3 Hook: Authentication via OIDC (Best Practice for DevSecOps)
+      # - name: Azure Login
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Execute Deployment
+        run: |
+          echo "Phase 3 deployment automation will execute here."
+          echo "The custom Go/PowerShell deployment tool will parse the artifact and interact with Azure REST APIs."
