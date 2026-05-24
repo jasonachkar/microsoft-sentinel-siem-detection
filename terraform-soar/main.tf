@@ -1,4 +1,5 @@
-# This module deploys a SOAR auto-remediation playbook via Azure Logic Apps.
+# This module deploys a lab SOAR playbook shell via Azure Logic Apps.
+# Containment permissions are opt-in and should be scoped to an approved lab target.
 terraform {
   required_providers {
     azurerm = {
@@ -18,8 +19,20 @@ variable "location" {
   default     = "eastus"
 }
 
+variable "enable_network_containment_role" {
+  type        = bool
+  description = "Opt-in switch for granting Network Contributor to the playbook identity in a lab containment scope."
+  default     = false
+}
+
+variable "containment_scope_resource_group_id" {
+  type        = string
+  description = "Optional resource group ID containing lab NSGs that the playbook is allowed to modify."
+  default     = ""
+}
+
 resource "azurerm_resource_group" "soar" {
-  name     = "rg-sentinel-soar-prod"
+  name     = "rg-sentinel-soar-lab"
   location = var.location
 }
 
@@ -34,11 +47,11 @@ resource "azurerm_logic_app_workflow" "isolate_host" {
   }
 }
 
-# Least privilege: Network Contributor scoped to the SOAR resource group ONLY, not the
-# whole subscription. The playbook isolates a compromised host by modifying the NSGs
-# delegated into this resource group, so it never needs subscription-wide write access.
+# Least privilege: Network Contributor is disabled by default and must be explicitly
+# enabled for a lab resource group. Do not scope this to the whole subscription.
 resource "azurerm_role_assignment" "soar_network_contributor" {
-  scope                = azurerm_resource_group.soar.id
+  count                = var.enable_network_containment_role ? 1 : 0
+  scope                = var.containment_scope_resource_group_id != "" ? var.containment_scope_resource_group_id : azurerm_resource_group.soar.id
   role_definition_name = "Network Contributor"
   principal_id         = azurerm_logic_app_workflow.isolate_host.identity[0].principal_id
 }
