@@ -120,7 +120,7 @@ export default function SoarDashboard() {
             <i className="pi pi-bolt text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Human-Approved SOAR Design</h1>
+            <h1 className="text-3xl font-bold tracking-tight">SOAR Response</h1>
             <p className="text-gray-400">
               Logic App containment pattern with scope checks, approval, least-privilege identity, and demo-only execution logs.
             </p>

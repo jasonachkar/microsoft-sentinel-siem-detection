@@ -42,7 +42,7 @@ export default function Layout({ children }) {
   };
 
   const isActivePath = (path) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === '/') return location.pathname === '/' || location.pathname === '/reviewer';
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 

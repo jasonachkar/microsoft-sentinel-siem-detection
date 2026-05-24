@@ -26,7 +26,7 @@ const STEPS = [
   },
   {
     route: '/appsec',
-    title: 'AppSec & Supply Chain',
+    title: 'CI/CD Security',
     body: 'Gitleaks, TFSec, Trivy, validation, and bundling are represented through the GitHub Actions workflow.',
     why: 'Supply-chain security and policy checks are part of a credible cloud security pipeline.',
   },

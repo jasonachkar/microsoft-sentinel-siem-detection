@@ -141,7 +141,7 @@ const decisions = [
     area: 'Reviewer experience',
     file: 'docs/adr/0012-evidence-first-portfolio-ui.md',
     context: 'Reviewers need to understand the project quickly without reverse-engineering the repo.',
-    decision: 'Make Reviewer Mode, Evidence Center, and Interview Mode primary experiences.',
+    decision: 'Make Start Here, Evidence, and Interview Prep primary experiences.',
     tradeoff: 'Evidence-first UX is less flashy than a generic command center.',
     security: 'Claims are tied to proof paths, docs, tests, or limitations.',
     operations: 'Screenshots and artifacts can be added over time without changing the UX model.',

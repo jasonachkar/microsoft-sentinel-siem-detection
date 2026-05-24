@@ -68,7 +68,7 @@ export default function TerraformDrift() {
             <i className="pi pi-sync text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-violet-200">IaC Drift Detection Demo</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-violet-200">CI/CD &amp; Drift Demo</h1>
             <p className="text-gray-400">
               Repo-backed nightly Terraform drift workflow with sample resource state and sample incidentization output.
             </p>

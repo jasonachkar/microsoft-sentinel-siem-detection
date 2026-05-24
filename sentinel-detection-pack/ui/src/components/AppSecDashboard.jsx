@@ -54,7 +54,7 @@ export default function AppSecDashboard() {
             <i className="pi pi-verified text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-rose-200">AppSec &amp; Supply Chain</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-rose-200">CI/CD Security</h1>
             <p className="text-gray-400">
               CI security gate model and demo finding examples for Gitleaks, TFSec, Trivy, and CodeQL.
             </p>

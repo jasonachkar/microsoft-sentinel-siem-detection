@@ -98,6 +98,49 @@ export const cloudSecurityControls = [
   ['Azure Policy', 'Deny/audit guardrail examples for posture management.', 'terraform-policy/main.tf'],
 ];
 
+export const fiveMinutePath = [
+  { step: 'Architecture', route: '/architecture', why: 'See how repo, CI, Terraform, Sentinel, and SOAR connect.', time: '60 sec' },
+  { step: 'Password Spray Scenario', route: '/scenario/password-spray', why: 'Flagship detection with KQL, entities, triage, and response tradeoffs.', time: '90 sec' },
+  { step: 'CI/CD & Drift', route: '/drift', why: 'Security gates, Terraform plan, and drift incidentization.', time: '45 sec' },
+  { step: 'Evidence', route: '/evidence', why: 'Repo-backed proof cards and real vs demo inventory.', time: '60 sec' },
+  { step: 'Limitations', route: '/evidence#limitations', why: 'Honest scope: demo telemetry, mock assertion, and planned SOAR.', time: '45 sec' },
+];
+
+export const whatThisProves = [
+  {
+    title: 'Detection-as-Code',
+    status: 'Real code',
+    summary: '16 KQL/YAML scheduled rules with MITRE mapping, entity mappings, and tuning notes.',
+    path: 'sentinel-detection-pack/rules-yaml',
+  },
+  {
+    title: 'Cloud Security IaC',
+    status: 'Real IaC',
+    summary: 'Terraform modules for Sentinel core, AWS connector, policy guardrails, and SOAR shell.',
+    path: 'terraform/main.tf',
+  },
+  {
+    title: 'CI/CD Security Gates',
+    status: 'Real CI',
+    summary: 'GitHub Actions for secret scanning, IaC scans, rule validation, bundling, and drift detection.',
+    path: '.github/workflows/sentinel-ci-cd.yaml',
+  },
+  {
+    title: 'Reviewer Experience',
+    status: 'Repo-backed',
+    summary: 'UI links every claim to source files and labels demo telemetry honestly.',
+    path: 'sentinel-detection-pack/ui/src/data/evidenceCatalog.js',
+  },
+];
+
+export const topProofLinks = [
+  { label: 'Password spray rule YAML', path: 'sentinel-detection-pack/rules-yaml/identity/EntraID_Password_Spray.yaml', status: 'Real code' },
+  { label: 'Sentinel CI/CD workflow', path: '.github/workflows/sentinel-ci-cd.yaml', status: 'Real CI' },
+  { label: 'Terraform Sentinel core', path: 'terraform/main.tf', status: 'Real IaC' },
+  { label: 'Go deployer CLI', path: 'src-cli/deployer.go', status: 'Real code' },
+  { label: 'Drift detection workflow', path: '.github/workflows/drift-detection.yaml', status: 'Real CI' },
+];
+
 export const flagshipScenario = {
   title: 'Entra ID Password Spray',
   ruleId: '0710c724-a738-4b0f-af52-947ba4f01c0d',
