@@ -9,10 +9,11 @@
     "build": "npm run sync-data && vite build",
     "preview": "vite preview",
     "sync-data": "node scripts/sync-data.js",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:built": "playwright test",
+    "test:e2e:headed": "npm run build && playwright test --headed",
     "evidence:screenshots": "node scripts/generate-evidence-screenshots.mjs",
-    "evidence:all": "npm run build && npm run evidence:screenshots && npm run test:e2e"
+    "evidence:all": "npm run build && npm run evidence:screenshots && npm run test:e2e:built"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",

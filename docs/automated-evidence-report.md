@@ -63,10 +63,11 @@ Parallel jobs also run `scripts/test-detections.py` and `src-cli` Go tests.
 
 | Script | Purpose |
 |---|---|
-| `test:e2e` | Run all Playwright tests |
-| `test:e2e:headed` | Run with visible browser |
+| `test:e2e` | Build + run all Playwright tests (clean checkout safe) |
+| `test:e2e:built` | Run Playwright against existing `dist/` (CI step after build) |
+| `test:e2e:headed` | Build + run with visible browser |
 | `evidence:screenshots` | Generate `evidence/ui/*` captures |
-| `evidence:all` | Build + screenshots + e2e |
+| `evidence:all` | Build once + screenshots + e2e (uses `test:e2e:built`) |
 
 ## Limitations
 
@@ -94,3 +95,67 @@ Parallel jobs also run `scripts/test-detections.py` and `src-cli` Go tests.
 - generates reproducible UI evidence artifacts.
 
 Merge when `.github/workflows/portfolio-evidence.yml` passes on the PR.
+
+## Final merge-safety validation
+
+Date: 2026-05-24 (reliability pass)
+
+### Scripts changed
+
+| File | Change |
+|---|---|
+| `sentinel-detection-pack/ui/package.json` | `test:e2e` now runs `build` first; added `test:e2e:built`; `evidence:all` uses `test:e2e:built` to avoid double build |
+| `.github/workflows/portfolio-evidence.yml` | Playwright step uses `npm run test:e2e:built`; invalid action SHAs replaced with repo-verified SHAs from `sentinel-ci-cd.yaml` |
+
+### Commands run
+
+```bash
+cd sentinel-detection-pack/ui
+npm ci --ignore-scripts
+npx playwright install --with-deps chromium
+npm run build
+npm run test:e2e:built
+Remove-Item -Recurse -Force dist; npm run test:e2e   # clean-checkout simulation
+npm run evidence:screenshots
+
+# repo root
+python scripts/test-detections.py
+cd src-cli && go test ./...
+```
+
+### Pass/fail results
+
+| Command | Result |
+|---|---|
+| `npm run build` | Pass |
+| `npm run test:e2e:built` | Pass (74 tests) |
+| `npm run test:e2e` (after deleting `dist/`) | Pass (builds then tests) |
+| `npm run evidence:screenshots` | Pass |
+| `python scripts/test-detections.py` | Pass |
+| `go test ./...` | Pass |
+
+### Pinned action SHA verification
+
+Verified via GitHub REST API (`api.github.com/repos/actions/<action>/commits/<sha>`). `gh` CLI was not available locally.
+
+| Action | Pinned SHA | Verified | Notes |
+|---|---|---|---|
+| `actions/checkout` | `34e114876b0b11c390a56381ad16ebd13914f8d5` | Yes | Valid commit; matches `sentinel-ci-cd.yaml` |
+| `actions/setup-node` | `49933ea5288caeca8642d1e84afbd3f7d6820020` | Yes | **Replaced** invalid SHA; matches `sentinel-ci-cd.yaml` v4.4.0 |
+| `actions/upload-artifact` | `ea165f8d65b6e75b540449e92b4886f43607fa02` | Yes | **Replaced** invalid SHA; matches `sentinel-ci-cd.yaml` |
+| `actions/setup-python` | `a26af69be951a213d495a4c3e4e4022e16d87065` | Yes | **Replaced** invalid SHA; matches `sentinel-ci-cd.yaml` |
+| `actions/setup-go` | `40f1582b2485089dde7abd97c1529aa768e1baff` | Yes | **Replaced** invalid SHA; matches `sentinel-ci-cd.yaml` |
+| `actions/download-artifact` | `d3f86a106a0bac45b974a628896c90dbdf5c8093` | Yes | **Replaced** invalid SHA; matches `sentinel-ci-cd.yaml` |
+
+Original portfolio-evidence SHAs for setup-node, upload-artifact, setup-python, setup-go, and download-artifact returned HTTP 422 (not found) and would have failed the workflow before tests ran.
+
+### Remaining risks
+
+- `/threat-map` nav test takes ~17s due to `networkidle`; total suite ~60s in CI.
+- Screenshot PNGs may differ slightly across OS/font rendering.
+- Optional `commit_screenshots` dispatch job needs `contents: write` and should only be used on trusted branches.
+- First green run on GitHub Actions is still required to confirm Ubuntu + `--with-deps chromium` in CI.
+
+### Final merge recommendation
+
+**Yes — safe to merge** after one green **Portfolio UI Evidence** workflow run on GitHub Actions confirms the corrected SHAs and Playwright job succeed in CI.

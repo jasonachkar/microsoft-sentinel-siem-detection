@@ -53,10 +53,11 @@ Scripts:
 
 | Script | Purpose |
 | --- | --- |
-| `npm run test:e2e` | Reviewer path, nav routes, overclaiming, accessibility |
-| `npm run test:e2e:headed` | Same tests with visible browser |
-| `npm run evidence:screenshots` | Capture `evidence/ui/*.png` and index |
-| `npm run evidence:all` | Build + screenshots + e2e tests |
+| `npm run test:e2e` | Build + run all Playwright tests (works from clean checkout) |
+| `npm run test:e2e:built` | Run Playwright tests against existing `dist/` (CI uses this after build) |
+| `npm run test:e2e:headed` | Build + run with visible browser |
+| `npm run evidence:screenshots` | Generate `evidence/ui/*` captures |
+| `npm run evidence:all` | Build once + screenshots + e2e (no double build) |
 
 Output is written to `../../evidence/ui/`. GitHub Actions uploads artifacts as `portfolio-ui-screenshots` and `playwright-report`.
 
