@@ -53,8 +53,8 @@ export default function Layout({ children }) {
           <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-500 to-purple-500 shadow-lg shadow-blue-500/20">
             <i className="pi pi-shield text-sm text-white" />
           </span>
-          <span className="text-xl font-bold tracking-wider text-white">
-            SENTINEL<span className="text-blue-500">OS</span>
+          <span className="text-lg font-bold tracking-wider text-white">
+            SENTINEL<span className="text-blue-500"> LAB</span>
           </span>
         </div>
 
@@ -88,7 +88,7 @@ export default function Layout({ children }) {
         </div>
 
         <div className="border-t border-soc-border p-4 text-center text-xs text-soc-muted">
-          v2.5.0-enterprise
+          portfolio lab
         </div>
       </aside>
 
@@ -100,7 +100,7 @@ export default function Layout({ children }) {
             className="group flex w-72 items-center gap-3 rounded-lg border border-soc-border bg-soc-bg/60 px-3 py-2 text-sm text-soc-muted transition-colors hover:border-blue-500/40 hover:text-gray-300"
           >
             <i className="pi pi-search text-xs" />
-            <span className="flex-1 text-left">Search or jump to…</span>
+            <span className="flex-1 text-left">Search or jump to...</span>
             <kbd className="rounded border border-soc-border px-1.5 py-0.5 text-[10px]">
               {isMac ? '⌘' : 'Ctrl'} K
             </kbd>
@@ -117,7 +117,7 @@ export default function Layout({ children }) {
             </button>
             <span className="flex items-center gap-2 rounded-full border border-green-400/20 bg-green-400/10 px-3 py-1 text-sm text-green-400">
               <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-              <span className="hidden md:inline">Live Telemetry</span>
+              <span className="hidden md:inline">Evidence Mode</span>
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-gradient-to-tr from-blue-500 to-purple-500 font-bold text-white shadow-lg">
               JA

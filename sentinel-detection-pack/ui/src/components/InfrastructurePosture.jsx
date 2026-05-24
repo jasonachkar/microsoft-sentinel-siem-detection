@@ -9,7 +9,7 @@ const postureItems = [
     path: '/terraform/main.tf',
     icon: 'pi pi-cloud',
     color: 'text-blue-300',
-    status: 'Provisioned',
+    status: 'Repo-backed',
     severity: 'success',
   },
   {
@@ -17,7 +17,7 @@ const postureItems = [
     path: '/terraform-aws-connector/main.tf',
     icon: 'pi pi-amazon',
     color: 'text-orange-300',
-    status: 'Active (OIDC)',
+    status: 'IaC design',
     severity: 'success',
   },
   {
@@ -25,7 +25,7 @@ const postureItems = [
     path: '/terraform-soar/main.tf',
     icon: 'pi pi-bolt',
     color: 'text-purple-300',
-    status: 'Listening',
+    status: 'Design',
     severity: 'success',
   },
 ];
@@ -40,7 +40,7 @@ export default function InfrastructurePosture() {
           </span>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-indigo-200">Infrastructure & Cloud-Native Posture</h1>
-            <p className="text-gray-400">Live state of Terraform modules, multi-cloud integrations, and Kubernetes telemetry.</p>
+            <p className="text-gray-400">Repo-backed Terraform modules, multi-cloud integration patterns, and Kubernetes detection coverage.</p>
           </div>
         </div>
       </section>
@@ -68,7 +68,7 @@ export default function InfrastructurePosture() {
             <i className="pi pi-box mb-4 text-6xl text-blue-400" />
             <h3 className="text-xl font-bold text-gray-100">AKS / EKS Telemetry</h3>
             <p className="mt-2 text-gray-400">
-              Container execution anomalies and API audit logs route through Azure Monitor into Sentinel hot storage.
+              Container execution anomaly detection is represented by repo-backed Sentinel rule content and demo telemetry views.
             </p>
             <Divider />
             <div className="w-full text-left">

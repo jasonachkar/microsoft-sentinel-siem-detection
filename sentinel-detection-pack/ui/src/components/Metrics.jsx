@@ -112,7 +112,7 @@ export default function Metrics() {
   const { liveEvents, incidents } = useAppStore();
   const rules = rulesData.rules || [];
 
-  // Calculate real-time metrics
+  // Calculate sample metrics from local/demo events.
   const metrics = useMemo(() => {
     const alertsLast24h = liveEvents.filter(e => {
       const time = new Date(e.timestamp);
@@ -347,7 +347,7 @@ export default function Metrics() {
               <p className="text-sm text-gray-400">Active Rules</p>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Production-ready detection coverage</p>
+          <p className="text-xs text-gray-500">Portfolio lab detection coverage</p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 rounded-xl border border-purple-700/50 p-6">
@@ -358,7 +358,7 @@ export default function Metrics() {
               <p className="text-sm text-gray-400">MITRE Tactics</p>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Full enterprise framework coverage</p>
+          <p className="text-xs text-gray-500">MITRE framework coverage view</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 rounded-xl border border-orange-700/50 p-6">

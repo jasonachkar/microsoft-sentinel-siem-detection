@@ -4,7 +4,7 @@ export const navSections = [
   {
     section: 'Executive View',
     items: [
-      { path: '/', icon: 'pi-globe', label: 'Command Center', keywords: 'home overview dashboard' },
+      { path: '/', icon: 'pi-globe', label: 'Reviewer Home', keywords: 'home overview dashboard reviewer lab' },
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
       { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps', keywords: 'cost ingestion savings' },
       { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture', keywords: 'azure findings' },
@@ -13,16 +13,16 @@ export const navSections = [
   {
     section: 'Governance',
     items: [
-      { path: '/compliance', icon: 'pi-check-square', label: 'Compliance & Controls', keywords: 'cis nist csf benchmark audit controls' },
+      { path: '/compliance', icon: 'pi-check-square', label: 'Controls Mapping', keywords: 'cis nist csf benchmark audit controls lab' },
       { path: '/decisions', icon: 'pi-book', label: 'Architecture Decisions', keywords: 'adr rationale why trade-off design' },
     ],
   },
   {
     section: 'Active Defense',
     items: [
-      { path: '/incidents', icon: 'pi-shield', label: 'Live Incidents', keywords: 'alerts queue triage' },
+      { path: '/incidents', icon: 'pi-shield', label: 'Demo Incidents', keywords: 'alerts queue triage simulated' },
       { path: '/kubernetes', icon: 'pi-box', label: 'K8s Telemetry', keywords: 'kubernetes aks eks container' },
-      { path: '/copilot', icon: 'pi-bolt', label: 'AI Copilot', keywords: 'genai assistant triage' },
+      { path: '/copilot', icon: 'pi-bolt', label: 'Copilot Concept', keywords: 'genai assistant triage demo' },
       { path: '/soar', icon: 'pi-sitemap', label: 'SOAR Playbooks', keywords: 'logic app automation remediation' },
     ],
   },
@@ -39,11 +39,11 @@ export const navSections = [
     items: [
       { path: '/rules', icon: 'pi-list', label: 'Detection Rules', keywords: 'kql detections catalog' },
       { path: '/detection-engineering', icon: 'pi-search-plus', label: 'Detection Deep-Dive', keywords: 'tuning false positive logic password spray' },
-      { path: '/kql', icon: 'pi-database', label: 'KQL Playground', keywords: 'kusto query hunt' },
+      { path: '/kql', icon: 'pi-database', label: 'KQL Demo Playground', keywords: 'kusto query hunt sample' },
       { path: '/mitre', icon: 'pi-th-large', label: 'MITRE ATT&CK', keywords: 'tactics techniques coverage navigator' },
-      { path: '/simulator', icon: 'pi-exclamation-triangle', label: 'Attack Simulator', keywords: 'simulate adversary emulation' },
+      { path: '/simulator', icon: 'pi-exclamation-triangle', label: 'Attack Visualizer', keywords: 'simulate adversary emulation demo' },
       { path: '/investigation', icon: 'pi-share-alt', label: 'Investigation', keywords: 'graph entities workbench' },
-      { path: '/threat-map', icon: 'pi-map', label: 'Threat Map', keywords: 'global ioc intel' },
+      { path: '/threat-map', icon: 'pi-map', label: 'Demo Threat Map', keywords: 'global ioc intel demo' },
     ],
   },
   {

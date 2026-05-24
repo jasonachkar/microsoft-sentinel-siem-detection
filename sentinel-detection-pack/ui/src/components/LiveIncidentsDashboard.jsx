@@ -48,8 +48,8 @@ export default function LiveIncidentsDashboard() {
             <i className="pi pi-shield text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-red-200">Live Sentinel Incidents</h1>
-            <p className="text-gray-400">Incidents and alerts fetched through the C# Azure Function API rather than static JSON.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-red-200">API-Backed Sentinel Incidents</h1>
+            <p className="text-gray-400">Optional Azure Function path for incidents and alerts when a Sentinel workspace is configured.</p>
           </div>
         </div>
       </section>
@@ -69,8 +69,8 @@ export default function LiveIncidentsDashboard() {
         </Card>
       </div>
 
-      <Card title="Sentinel Incident Stream" className="border border-dark-700 bg-dark-900 shadow-lg">
-        <DataTable value={incidents} loading={loading} paginator rows={10} className="p-datatable-sm" emptyMessage="No live incidents returned by the API.">
+      <Card title="Sentinel Incident API Results" className="border border-dark-700 bg-dark-900 shadow-lg">
+        <DataTable value={incidents} loading={loading} paginator rows={10} className="p-datatable-sm" emptyMessage="No incidents returned by the optional API.">
           <Column header="Incident" body={titleTemplate} sortable />
           <Column header="Severity" body={severityTemplate} sortable />
           <Column header="Status" body={statusTemplate} sortable />

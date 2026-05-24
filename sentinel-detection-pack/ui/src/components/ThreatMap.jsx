@@ -209,7 +209,7 @@ export default function ThreatMap() {
       setConnectionStatus(data.isRealData ? 'connected' : 'disconnected');
       
       if (data.error && !data.isRealData) {
-        setError('Could not fetch live data. Showing demo data.');
+        setError('Could not fetch public threat feed data. Showing demo data.');
       }
     } catch (error) {
       console.error('Failed to fetch threat data:', error);
@@ -246,10 +246,10 @@ export default function ThreatMap() {
             Global Threat Map
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
-            Real-time threat intelligence
+            Demo threat intel visualization with optional public feed data
             {threatData?.isRealData && (
               <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                <Wifi className="w-3 h-3" /> LIVE DATA
+                <Wifi className="w-3 h-3" /> PUBLIC FEED DATA
               </span>
             )}
           </p>

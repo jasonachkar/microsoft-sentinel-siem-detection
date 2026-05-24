@@ -113,8 +113,7 @@ export default function AppSecDashboard() {
 
       <Card title="IaC Misconfigurations (TFSec)" className="border border-dark-700 bg-dark-900 shadow-xl">
         <p className="mb-4 text-sm text-gray-400">
-          Live findings against the four Terraform modules. These map to real lines in this repo &mdash; treat them as the
-          remediation backlog.
+          Demo AppSec findings shaped around the Terraform modules. Use them as reviewer examples, not as current scan output.
         </p>
         <div className="space-y-3">
           {sortedIac.map((f) => (

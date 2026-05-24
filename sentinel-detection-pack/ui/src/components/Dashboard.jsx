@@ -52,14 +52,14 @@ function StatCard({ title, value, change, trend, icon: Icon, color, onClick, hre
   return <div onClick={onClick}>{content}</div>;
 }
 
-// Live Event Feed Component
+// Demo event feed component.
 function LiveEventFeed({ events }) {
   return (
     <div className="bg-dark-800/50 rounded-xl border border-dark-700 overflow-hidden">
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-dark-700">
         <div className="flex items-center gap-2">
           <Radio className="w-4 h-4 text-green-500 animate-pulse" />
-          <h3 className="font-semibold text-sm sm:text-base">Live Event Feed</h3>
+          <h3 className="font-semibold text-sm sm:text-base">Demo Event Feed</h3>
         </div>
         <span className="text-xs sm:text-sm text-gray-400">{events.length} events</span>
       </div>
@@ -182,7 +182,7 @@ function ThreatIntelSummary({ threatData, isLoading, isRealData }) {
           ) : isRealData ? (
             <span className="flex items-center gap-1 text-[10px] sm:text-xs text-green-400">
               <Wifi className="w-3 h-3" />
-              LIVE
+              API
             </span>
           ) : (
             <span className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
@@ -445,8 +445,8 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Security Operations Dashboard</h1>
-          <p className="text-gray-400 mt-1 text-sm">Real-time threat monitoring and detection</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Demo Security Operations Dashboard</h1>
+          <p className="text-gray-400 mt-1 text-sm">Sample threat monitoring and detection workflow</p>
         </div>
         <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
           <Clock className="w-4 h-4" />
@@ -454,7 +454,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Live Data Status Banner */}
+      {/* API data status banner */}
       {threatData.isRealData && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -463,7 +463,7 @@ export default function Dashboard() {
         >
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-green-400">Live Threat Intelligence Active</p>
+            <p className="text-sm font-medium text-green-400">Public Threat Intelligence API Data Active</p>
             <p className="text-xs text-gray-400">
               Fetching real data from {threatData.sources?.join(', ')}
             </p>

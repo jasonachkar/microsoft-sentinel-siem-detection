@@ -2,6 +2,7 @@
   "name": "sentinel-detection-pack-ui",
   "private": true,
   "version": "2.0.0",
+  "description": "Portfolio UI for a Microsoft Sentinel cloud security detection engineering lab.",
   "type": "module",
   "scripts": {
     "dev": "vite",

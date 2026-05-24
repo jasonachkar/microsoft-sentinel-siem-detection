@@ -126,7 +126,7 @@ export default function IaCExplorer() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-sky-200">Infrastructure as Code</h1>
             <p className="text-gray-400">
-              The actual Terraform, pipelines, and Go tooling that back this platform &mdash; rendered live from the repo.
+              Repo-backed Terraform, pipelines, and Go tooling rendered from generated source metadata.
             </p>
           </div>
         </div>

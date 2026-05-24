@@ -14,8 +14,8 @@ const pipelineEvents = [
   { status: 'Code Commit', date: 'Automated Trigger', icon: 'pi pi-github', color: '#64748b', desc: 'Security engineer pushes KQL, Terraform, API, or UI changes to main.' },
   { status: 'Shift-Left Scans', date: 'Trivy, TFSec, Gitleaks', icon: 'pi pi-search', color: '#f59e0b', desc: 'Dependency, secret, and IaC vulnerability checks run before deployment.' },
   { status: 'Infrastructure Provisioning', date: 'Terraform', icon: 'pi pi-box', color: '#8b5cf6', desc: 'Azure Sentinel, SOAR, honeypot, and AWS connector modules define the environment.' },
-  { status: 'Active Defense', date: 'Sentinel & AI Copilot', icon: 'pi pi-shield', color: '#3b82f6', desc: 'Live monitoring, incident triage, and automated containment are visible in one pane.' },
-  { status: 'Continuous Validation', date: 'Atomic Red Team', icon: 'pi pi-bolt', color: '#ef4444', desc: 'Automated adversary emulation asserts detections before changes are trusted.' },
+  { status: 'Response Design', date: 'Sentinel & SOAR workflow', icon: 'pi pi-shield', color: '#3b82f6', desc: 'Incident triage and containment patterns are shown with clear real/demo labels.' },
+  { status: 'Continuous Validation', date: 'Atomic Red Team pattern', icon: 'pi pi-bolt', color: '#ef4444', desc: 'Adversary emulation and assertion concepts are documented; live assertion requires configured Sentinel.' },
 ];
 
 const appSecMeters = [
@@ -23,6 +23,15 @@ const appSecMeters = [
   { label: 'High', color: '#f97316', value: 2 },
   { label: 'Medium', color: '#eab308', value: 14 },
   { label: 'Passed Checks', color: '#22c55e', value: 84 },
+];
+
+const realityRows = [
+  { area: 'KQL/YAML rules', status: 'Real code', notes: 'Repo-backed Sentinel analytics rule files.' },
+  { area: 'Terraform modules', status: 'Real IaC', notes: 'Deployable lab modules with subscription-specific inputs.' },
+  { area: 'CI/CD gates', status: 'Real CI', notes: 'GitHub Actions workflows define scans, validation, bundling, and drift checks.' },
+  { area: 'UI incidents and telemetry', status: 'Demo data', notes: 'Used for reviewer flow unless a page explicitly says it is API-backed.' },
+  { area: 'Detection assertion', status: 'Mock/local', notes: 'Current script simulates Sentinel confirmation unless live mode is added.' },
+  { area: 'SOAR containment', status: 'Design/lab', notes: 'Logic App pattern is present; do not treat as tested autonomous containment.' },
 ];
 
 export default function CommandCenter() {
@@ -89,11 +98,17 @@ export default function CommandCenter() {
           </span>
           <div>
             <h1 className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-4xl font-black text-transparent">
-              Global SOC Command Center
+              Microsoft Sentinel Cloud Security Detection Engineering Lab
             </h1>
             <p className="mt-1 text-lg text-gray-400">
-              Single pane of glass for Shift-Left AppSec, multi-cloud IaC, Kubernetes telemetry, and AI-driven active defense.
+              Portfolio lab for Detection-as-Code, KQL analytics rules, Terraform cloud security, CI/CD gates, drift detection, and SOAR response design.
             </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Tag value="Repo-backed" severity="success" />
+              <Tag value="Demo telemetry labelled" severity="warning" />
+              <Tag value="Deployable lab" severity="info" />
+              <Tag value="Not a production SOC" severity="danger" />
+            </div>
           </div>
         </div>
       </section>
@@ -109,10 +124,10 @@ export default function CommandCenter() {
                     <Tag severity="success" value="Online" />
                   </div>
                   <p className="text-xs text-gray-400">Terraform State: Synced</p>
-                  <p className="text-xs text-gray-400">Sentinel Data Connectors: Active</p>
+                  <p className="text-xs text-gray-400">Sentinel connector patterns: documented</p>
                 </div>
                 <div className="mt-4 rounded bg-dark-900 p-2 font-mono text-xs text-gray-500">
-                  Drift Check: Passed (2:00 AM)
+                  Drift workflow: repo-backed
                 </div>
               </div>
 
@@ -125,7 +140,7 @@ export default function CommandCenter() {
                   <p className="text-xs text-gray-400">CloudTrail S3 Bucket: Active</p>
                   <p className="text-xs text-gray-400">AssumeRole IAM: Configured</p>
                 </div>
-                <div className="mt-4 rounded bg-dark-900 p-2 font-mono text-xs text-gray-500">Cross-cloud logs flowing</div>
+                <div className="mt-4 rounded bg-dark-900 p-2 font-mono text-xs text-gray-500">Cross-cloud logging pattern</div>
               </div>
 
               <div className="flex h-full flex-col justify-between rounded-lg border-l-4 border-purple-500 bg-dark-950 p-4">
@@ -134,11 +149,11 @@ export default function CommandCenter() {
                     <h3 className="font-bold text-gray-100"><i className="pi pi-box mr-2 text-purple-300" />K8s / Docker</h3>
                     <Tag severity="warning" value="Monitoring" />
                   </div>
-                  <p className="text-xs text-gray-400">AKS/EKS Audit Logs: Ingesting</p>
+                  <p className="text-xs text-gray-400">AKS/EKS audit rule: repo-backed</p>
                   <p className="text-xs text-gray-400">Trivy Image Scans: Active</p>
                 </div>
                 <div className="mt-4 rounded border border-emerald-500/30 bg-dark-900 p-2 font-mono text-xs text-emerald-300">
-                  Anomaly detections live
+                  Demo telemetry labelled
                 </div>
               </div>
             </div>
@@ -146,16 +161,16 @@ export default function CommandCenter() {
 
           <Card title="Shift-Left AppSec Scans" className="border border-dark-700 bg-dark-900 shadow-xl">
             <div className="mb-4 text-sm text-gray-400">
-              Results from the latest CI/CD run across Trivy, TFSec, Gitleaks, Terraform, Go, Python, and Node.js assets.
+              Reviewer snapshot of the security gates defined in the CI workflow. Treat values as demo evidence unless backed by a workflow artifact.
             </div>
             <MeterGroup values={appSecMeters} className="mb-4" />
             <div className="mt-4 flex justify-between border-t border-dark-700 pt-3 font-mono text-xs text-gray-500">
               <span>Last Scan: {new Date().toLocaleDateString()}</span>
-              <span>Pipeline Assertion: PASSED</span>
+              <span>Detection Assertion: mock/local</span>
             </div>
           </Card>
 
-          <Card title="Active Threat Intel Ingestion" className="mt-6 border border-gray-700 bg-gray-900 shadow-xl">
+          <Card title="Demo Threat Intel Visualization" className="mt-6 border border-gray-700 bg-gray-900 shadow-xl">
             <DataTable value={tiData} rows={4} className="p-datatable-sm">
               <Column field="indicator" header="Indicator (IOC)" className="font-mono text-red-400" />
               <Column field="actor" header="Threat Actor" />
@@ -174,7 +189,7 @@ export default function CommandCenter() {
               <div className="text-3xl font-black text-blue-300">{stats.activeRules}</div>
             </div>
             <div className="rounded-lg border border-dark-700 bg-dark-900 p-4 text-center">
-              <div className="mb-1 text-xs uppercase text-gray-400">Actual Findings</div>
+              <div className="mb-1 text-xs uppercase text-gray-400">API Findings</div>
               <div className="text-3xl font-black text-red-300">{stats.postureFindings}</div>
             </div>
             <div className="rounded-lg border border-dark-700 bg-dark-900 p-4 text-center">
@@ -189,20 +204,28 @@ export default function CommandCenter() {
         </div>
 
         <Card title="DevSecOps Architecture" className="border border-dark-700 bg-dark-900 shadow-xl">
-          <p className="mb-6 text-sm text-gray-400">Automated end-to-end continuous security lifecycle.</p>
+          <p className="mb-6 text-sm text-gray-400">Reviewer narrative for the lab security lifecycle.</p>
           <Timeline value={pipelineEvents} marker={customizedMarker} content={customizedContent} className="w-full" />
           <Divider />
           <div className="grid gap-2 text-sm text-gray-400">
-            <div><strong className="text-gray-200">Live API:</strong> C# Azure Functions backed by Log Analytics and Resource Graph.</div>
+            <div><strong className="text-gray-200">Optional API:</strong> C# Azure Functions can query Log Analytics and Resource Graph when configured.</div>
             <div><strong className="text-gray-200">Azure resources:</strong> {stats.terraformResources || 'awaiting Azure auth'}</div>
             <div><strong className="text-gray-200">Sentinel incidents:</strong> {stats.liveIncidents}</div>
           </div>
         </Card>
       </div>
 
-      <Card title="Top Actual Azure Issues" className="border border-dark-700 bg-dark-900 shadow-xl">
+      <Card title="Real vs Simulated" className="border border-dark-700 bg-dark-900 shadow-xl">
+        <DataTable value={realityRows} className="p-datatable-sm">
+          <Column field="area" header="Area" />
+          <Column field="status" header="Status" body={(row) => <Tag value={row.status} severity={row.status.includes('Real') ? 'success' : row.status.includes('Demo') ? 'warning' : 'info'} />} />
+          <Column field="notes" header="Notes" />
+        </DataTable>
+      </Card>
+
+      <Card title="Azure Findings from Optional API" className="border border-dark-700 bg-dark-900 shadow-xl">
         {topFindings.length === 0 ? (
-          <div className="text-sm text-gray-400">No posture findings returned by Azure Resource Graph.</div>
+          <div className="text-sm text-gray-400">No posture findings returned by Azure Resource Graph, or the optional API is not configured.</div>
         ) : (
           <div className="grid gap-3">
             {topFindings.map((finding) => {
