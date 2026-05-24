@@ -1,5 +1,8 @@
 # Microsoft Sentinel Cloud Security Detection Engineering Lab
 
+[![DevSecOps CI/CD Pipeline](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/sentinel-ci-cd.yaml/badge.svg)](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/sentinel-ci-cd.yaml)
+[![Nightly IaC Drift Detection](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/drift-detection.yaml/badge.svg)](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/drift-detection.yaml)
+
 Microsoft Sentinel Cloud Security Detection Engineering Lab showing Detection-as-Code, KQL analytics rules, Terraform-managed SIEM infrastructure, CI/CD security gates, drift detection, and SOAR response design.
 
 Live demo: https://sentinel-detection-pack.vercel.app
