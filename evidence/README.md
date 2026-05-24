@@ -32,6 +32,33 @@ Before committing any screenshot:
 
 The UI intentionally shows missing evidence placeholders until real sanitized screenshots exist. Do not replace placeholders with generated images.
 
+## Automated UI screenshots
+
+Playwright can capture **UI reviewer evidence** for the portfolio app:
+
+```bash
+cd sentinel-detection-pack/ui
+npm ci --ignore-scripts
+npx playwright install --with-deps
+npm run evidence:screenshots
+```
+
+Generated files (repo root):
+
+```text
+evidence/ui/start-here.png
+evidence/ui/architecture.png
+evidence/ui/password-spray-scenario.png
+evidence/ui/evidence.png
+evidence/ui/interview-prep.png
+evidence/ui/mobile-start-here.png
+evidence/ui/evidence-index.md
+```
+
+These are React UI captures only. They do **not** prove Sentinel deployment, analytics rule firing, or SOAR execution in a tenant. Azure/Sentinel portal screenshots still require a real lab environment and the redaction checklist above.
+
+CI uploads the same files as the `portfolio-ui-screenshots` artifact from `.github/workflows/portfolio-evidence.yml`.
+
 ## Suggested Capture Order
 
 1. CI pipeline success.

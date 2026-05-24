@@ -8,7 +8,11 @@
     "dev": "vite",
     "build": "npm run sync-data && vite build",
     "preview": "vite preview",
-    "sync-data": "node scripts/sync-data.js"
+    "sync-data": "node scripts/sync-data.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "evidence:screenshots": "node scripts/generate-evidence-screenshots.mjs",
+    "evidence:all": "npm run build && npm run evidence:screenshots && npm run test:e2e"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
@@ -29,6 +33,8 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.51.1",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",

@@ -39,6 +39,29 @@ npm run build
 
 `npm run sync-data` refreshes UI data files from repository source content.
 
+## Automated reviewer evidence
+
+Playwright tests and screenshot generation for the 5-minute reviewer path:
+
+```bash
+npm ci --ignore-scripts
+npx playwright install --with-deps
+npm run evidence:all
+```
+
+Scripts:
+
+| Script | Purpose |
+| --- | --- |
+| `npm run test:e2e` | Reviewer path, nav routes, overclaiming, accessibility |
+| `npm run test:e2e:headed` | Same tests with visible browser |
+| `npm run evidence:screenshots` | Capture `evidence/ui/*.png` and index |
+| `npm run evidence:all` | Build + screenshots + e2e tests |
+
+Output is written to `../../evidence/ui/`. GitHub Actions uploads artifacts as `portfolio-ui-screenshots` and `playwright-report`.
+
+UI screenshots are automated reviewer evidence. Azure/Sentinel portal screenshots still need a real lab — this pipeline does not fake them.
+
 ## Positioning
 
 Safe description: "A portfolio UI for a Microsoft Sentinel cloud security detection engineering lab."
