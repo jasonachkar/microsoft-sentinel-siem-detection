@@ -62,6 +62,11 @@ The documentation is Microsoft Sentinel / Defender portal-aware. Microsoft Learn
 | `sentinel-detection-pack/ui/` | React + PrimeReact portfolio UI. |
 | `.github/workflows/` | CI/CD and drift detection workflows. |
 | `scripts/` | Validation, bundling, assertion, SOAR, and threat-intel demo scripts. |
+| `docs/adr/` | Architecture Decision Records covering detection schema, OIDC, ASIM strategy, drift, SOAR, AWS trust, Defender portal alignment, cost, and evidence-first UI design. |
+
+## Architecture Decisions
+
+The lab includes ADRs so a reviewer can inspect the engineering judgment behind the implementation, not only the final files. Start with `docs/adr/README.md` or the UI page at `/decisions`.
 
 ## Local Development
 
