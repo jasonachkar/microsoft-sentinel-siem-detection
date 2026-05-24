@@ -243,7 +243,7 @@ export default function ThreatMap() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
             <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-500" />
-            Global Threat Map
+            Demo Threat Intel Map
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
             Demo threat intel visualization with optional public feed data
@@ -253,6 +253,9 @@ export default function ThreatMap() {
               </span>
             )}
           </p>
+          <span className="mt-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+            Demo/API-dependent
+          </span>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

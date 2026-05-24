@@ -7,6 +7,7 @@ import { MeterGroup } from 'primereact/metergroup';
 import { Tag } from 'primereact/tag';
 import { Timeline } from 'primereact/timeline';
 import rulesData from '../data/rules.json';
+import { realVsSimulated } from '../data/projectFacts';
 import { liveApiService } from '../services/liveApiService';
 import { telemetryEngine } from '../services/telemetryEngine';
 
@@ -23,15 +24,6 @@ const appSecMeters = [
   { label: 'High', color: '#f97316', value: 2 },
   { label: 'Medium', color: '#eab308', value: 14 },
   { label: 'Passed Checks', color: '#22c55e', value: 84 },
-];
-
-const realityRows = [
-  { area: 'KQL/YAML rules', status: 'Real code', notes: 'Repo-backed Sentinel analytics rule files.' },
-  { area: 'Terraform modules', status: 'Real IaC', notes: 'Deployable lab modules with subscription-specific inputs.' },
-  { area: 'CI/CD gates', status: 'Real CI', notes: 'GitHub Actions workflows define scans, validation, bundling, and drift checks.' },
-  { area: 'UI incidents and telemetry', status: 'Demo data', notes: 'Used for reviewer flow unless a page explicitly says it is API-backed.' },
-  { area: 'Detection assertion', status: 'Mock/local', notes: 'Current script simulates Sentinel confirmation unless live mode is added.' },
-  { area: 'SOAR containment', status: 'Design/lab', notes: 'Logic App pattern is present; do not treat as tested autonomous containment.' },
 ];
 
 export default function CommandCenter() {
@@ -216,7 +208,7 @@ export default function CommandCenter() {
       </div>
 
       <Card title="Real vs Simulated" className="border border-dark-700 bg-dark-900 shadow-xl">
-        <DataTable value={realityRows} className="p-datatable-sm">
+        <DataTable value={realVsSimulated} className="p-datatable-sm">
           <Column field="area" header="Area" />
           <Column field="status" header="Status" body={(row) => <Tag value={row.status} severity={row.status.includes('Real') ? 'success' : row.status.includes('Demo') ? 'warning' : 'info'} />} />
           <Column field="notes" header="Notes" />

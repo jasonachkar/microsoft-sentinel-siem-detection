@@ -41,6 +41,9 @@ export default function InfrastructurePosture() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-indigo-200">Infrastructure & Cloud-Native Posture</h1>
             <p className="text-gray-400">Repo-backed Terraform modules, multi-cloud integration patterns, and Kubernetes detection coverage.</p>
+            <span className="mt-2 inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-semibold text-green-200">
+              Repo-backed IaC
+            </span>
           </div>
         </div>
       </section>

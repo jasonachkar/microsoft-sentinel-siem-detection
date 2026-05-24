@@ -50,10 +50,13 @@ export default function AICopilot() {
             <i className="pi pi-sparkles text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">GenAI SOC Analyst Copilot</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Copilot Concept Demo</h1>
             <p className="text-gray-400">
-              LLM-powered Sentinel incident triage, MITRE mapping, and SOAR response recommendation.
+              Demo-only Sentinel incident triage summary, MITRE mapping, and SOAR response recommendation.
             </p>
+            <div className="mt-2">
+              <Tag value="Demo data" severity="warning" />
+            </div>
           </div>
         </div>
       </section>

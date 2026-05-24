@@ -58,6 +58,9 @@ export default function Incidents() {
           <i className="pi pi-shield text-red-500"></i> Active Incidents
         </h1>
         <p className="text-soc-muted mt-1">Simulated incident workflow for demonstrating triage and response flow.</p>
+        <span className="mt-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+          Simulated incident workflow
+        </span>
       </div>
 
       <div className="soc-panel p-4">
