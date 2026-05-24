@@ -6,6 +6,7 @@ export const navSections = [
     items: [
       { path: '/', icon: 'pi-globe', label: 'Reviewer Mode', keywords: 'home overview dashboard reviewer lab evidence' },
       { path: '/evidence', icon: 'pi-folder-open', label: 'Evidence Center', keywords: 'proof files screenshots real simulated limitations' },
+      { path: '/interview', icon: 'pi-comments', label: 'Interview Mode', keywords: 'hiring manager skills questions resume claims' },
       { path: '/command-center', icon: 'pi-desktop', label: 'Lab Dashboard', keywords: 'command center summary dashboard' },
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
       { path: '/cloud-security-controls', icon: 'pi-shield', label: 'Cloud Security Controls', keywords: 'azure policy defender oidc logging cost governance' },

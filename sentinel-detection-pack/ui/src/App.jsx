@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import ReviewerMode from './components/ReviewerMode';
 import EvidenceCenter from './components/EvidenceCenter';
+import InterviewMode from './components/InterviewMode';
 import PasswordSprayScenario from './components/PasswordSprayScenario';
 import CommandCenter from './components/CommandCenter';
 import Dashboard from './components/Dashboard';
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/" element={<ReviewerMode />} />
             <Route path="/reviewer" element={<ReviewerMode />} />
             <Route path="/evidence" element={<EvidenceCenter />} />
+            <Route path="/interview" element={<InterviewMode />} />
             <Route path="/scenario/password-spray" element={<PasswordSprayScenario />} />
             <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/dashboard" element={<Dashboard />} />
