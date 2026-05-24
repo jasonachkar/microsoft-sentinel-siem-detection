@@ -15,7 +15,7 @@ requiredDataConnectors:
     dataTypes:
       - AzureActivity
 queryFrequency: PT1H
-queryPeriod: PT1D
+queryPeriod: P1D
 triggerOperator: GreaterThan
 triggerThreshold: 0
 tactics:

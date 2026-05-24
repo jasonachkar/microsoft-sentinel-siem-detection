@@ -1,110 +1,262 @@
-# Microsoft Sentinel — Multi-Cloud Detection & Response Platform
+# Microsoft Sentinel Cloud Security Detection Engineering Lab
 
-A full **DevSecOps + Detection-as-Code** platform for Microsoft Sentinel: multi-cloud
-Terraform, a Go deployment CLI, a policy-gated CI/CD pipeline, nightly IaC drift
-detection, and an enterprise SOC control-plane UI that renders the **real** infrastructure
-backing it.
+[![DevSecOps CI/CD Pipeline](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/sentinel-ci-cd.yaml/badge.svg)](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/sentinel-ci-cd.yaml)
+[![Nightly IaC Drift Detection](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/drift-detection.yaml/badge.svg)](https://github.com/jasonachkar/microsoft-sentinel-siem-detection/actions/workflows/drift-detection.yaml)
 
-> The in-app **Reference Architecture** and **Infrastructure as Code** views visualize
-> everything below directly from this repository — no mock-ups.
+Microsoft Sentinel Cloud Security Detection Engineering Lab showing Detection-as-Code, KQL analytics rules, Terraform-managed SIEM infrastructure, CI/CD security gates, drift detection, and SOAR response design.
 
-**▶ Live demo:** https://sentinel-detection-pack.vercel.app — a guided tour starts on
-first load; press `⌘K` / `Ctrl+K` anywhere for the command palette.
+## Live Demo
 
----
+Live demo: https://sentinel-detection-pack.vercel.app
 
-## Architecture
+The UI is a reviewer experience for a private lab. Demo telemetry is labelled, optional API-backed pages can be empty without being broken, and proof paths point back to repository files.
 
-```
- Telemetry sources            Ingestion        SIEM                Active response
- ────────────────────         ──────────       ──────────────      ──────────────────
- Entra ID · M365 · Defender                                        AI SOC Copilot (triage)
- AKS/EKS · AWS CloudTrail ──▶ Data         ──▶ Microsoft       ──▶ SOAR Logic App ──▶ NSG /
- Honeypot                     Connectors        Sentinel            Entra containment
-                                                  ▲
-              GitHub Actions CI/CD ──────────────┘  (validate + OIDC deploy of KQL rules)
-```
+## 60-Second Overview
 
-## Repository layout
+This repository demonstrates how a cloud security engineer can organize Microsoft Sentinel detections, Terraform security infrastructure, CI validation, drift detection, and evidence into a defensible portfolio lab. It is built to be reviewed quickly through the UI and then inspected in code.
 
-| Path | What it is |
-|------|-----------|
-| `terraform/` | Sentinel core: Log Analytics workspace + SecurityInsights, remote `azurerm` state |
-| `terraform-aws-connector/` | KMS-encrypted CloudTrail S3 bucket + OIDC AssumeRole for cross-cloud ingestion |
-| `terraform-soar/` | Isolate-host Logic App with system-assigned identity, **RG-scoped** least-privilege RBAC |
-| `terraform-honeypot/` | Throwaway Windows VM; admin credential **generated at apply time**, never committed |
-| `src-cli/` | Go CLI that maps YAML detections to ARM `ScheduledAlertRule` and deploys them |
-| `sentinel-detection-pack/rules-yaml/` | 16 KQL detections (Detection-as-Code), MITRE-mapped |
-| `sentinel-detection-pack/ui/` | React + PrimeReact SOC control plane |
-| `.github/workflows/` | Policy-gated CI/CD pipeline + nightly drift detection |
-| `scripts/` | Rule validation, bundling, Atomic Red Team assertion, threat-intel ingest |
+## What This Proves
 
-## DevSecOps pipeline (`.github/workflows/sentinel-ci-cd.yaml`)
+- Microsoft Sentinel Detection-as-Code using YAML and KQL.
+- KQL analytics rule engineering with MITRE ATT&CK metadata, entity mappings, custom details, and tuning notes.
+- Terraform-managed Sentinel, Azure Policy, SOAR, honeypot, and AWS CloudTrail connector patterns.
+- CI/CD security gates for secrets, IaC, dependencies, Go code, UI build, and detection metadata/sample validation.
+- Drift detection workflow using scheduled Terraform plan checks.
+- Human-approved SOAR containment design with least-privilege intent.
+- Evidence-first UI design that separates real code, demo telemetry, planned work, and limitations.
+- Defender portal-aware Sentinel workflow positioning.
 
-1. **Shift-left scans** — Gitleaks (secrets), TFSec across all four Terraform modules, Trivy (deps).
-   The TFSec gate is **blocking at HIGH/CRITICAL** (`soft_fail: false`, `--minimum-severity HIGH`);
-   MEDIUM/LOW are reported but non-blocking.
-2. **Validate & bundle** the detection rules.
-3. **Detection-as-Code assertion** against Atomic Red Team sample telemetry.
-4. **Deploy** — builds and runs the Go CLI with `-apply` under OIDC federated auth (no stored secrets).
+## Reviewer Mode Screenshot
 
-### Nightly drift detection (`.github/workflows/drift-detection.yaml`)
-Runs `terraform plan -detailed-exitcode` against remote state every night. Exit code `2`
-(drift) opens a labelled `security/drift/incident` issue with the plan summary.
+Automated UI screenshots are generated by Playwright and uploaded as the `portfolio-ui-screenshots` GitHub Actions artifact. They are **UI reviewer evidence**, not Azure/Sentinel portal proof.
 
-## Go deployment CLI (`src-cli/`)
+Regenerate locally:
 
 ```bash
-cd src-cli
-go build -o sentinel-deployer .
-
-# Safe dry-run (default): validate + map every rule, no API calls
-./sentinel-deployer -sub <SUB> -rg <RG> -workspace <WS> -dir ../sentinel-detection-pack/rules-yaml
-
-# Apply: create/update the Scheduled Alert Rules in Sentinel
-./sentinel-deployer -sub <SUB> -rg <RG> -workspace <WS> -apply
+cd sentinel-detection-pack/ui
+npm ci --ignore-scripts
+npx playwright install --with-deps
+npm run evidence:all
 ```
 
-Auth uses `DefaultAzureCredential` (OIDC, Managed Identity, or `az login`).
+Output:
 
-## Required GitHub configuration
+```text
+evidence/ui/start-here.png
+evidence/ui/architecture.png
+evidence/ui/password-spray-scenario.png
+evidence/ui/evidence.png
+evidence/ui/interview-prep.png
+evidence/ui/mobile-start-here.png
+evidence/ui/evidence-index.md
+```
 
-| Secret | Used by | Purpose |
-|--------|---------|---------|
-| `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` | deploy + drift | OIDC federated login |
-| `SENTINEL_RESOURCE_GROUP` / `SENTINEL_WORKSPACE_NAME` | deploy | target workspace for the Go CLI |
-| `TFSTATE_RG` / `TFSTATE_STORAGE_ACCOUNT` / `TFSTATE_CONTAINER` | drift | `azurerm` remote-state backend |
+Sanitized Azure/Sentinel portal screenshots still belong under `evidence/azure/` or `evidence/github/` following `evidence/README.md`.
 
-## SOC control plane (`sentinel-detection-pack/ui/`)
+## Automated reviewer evidence
+
+Every push to the reviewer branch runs CI that:
+
+- builds the UI,
+- smoke-tests the 5-minute reviewer path,
+- checks nav routes and forbidden overclaiming phrases,
+- runs basic accessibility checks,
+- generates UI screenshots,
+- uploads `portfolio-ui-screenshots` and `playwright-report` artifacts.
+
+See `docs/automated-evidence-report.md` for details.
+
+## Architecture Diagram
+
+```mermaid
+graph TD
+    Engineer[Security Engineer] --> Repo[GitHub Repository]
+    Repo --> Actions[GitHub Actions CI/CD]
+    Actions --> Scan[Gitleaks / TFSec / Trivy / CodeQL]
+    Actions --> Validate[Rule + Sample Validation]
+    Validate --> Bundle[Detection Bundle]
+    Bundle --> GoCLI[Go Sentinel Deployer]
+    GoCLI --> Sentinel[Microsoft Sentinel / Defender Portal]
+    Repo --> Terraform[Terraform Modules]
+    Terraform --> Azure[Azure Log Analytics / Sentinel / Policy]
+    Terraform --> AWS[AWS CloudTrail Connector Pattern]
+    Sentinel --> SOAR[Human-Approved SOAR Design]
+    Actions --> Drift[Nightly Terraform Drift Check]
+    Repo --> UI[Reviewer UI / Evidence Center]
+```
+
+## Real vs Simulated
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Sentinel IaC | Real Terraform | Deployable with an Azure subscription and appropriate variables/secrets. |
+| KQL/YAML rules | Real files | Located under `sentinel-detection-pack/rules/` and `sentinel-detection-pack/rules-yaml/`. |
+| Go deployer | Real dry-run/apply path | Uses `DefaultAzureCredential`; deploys scheduled analytics rule definitions where configured. |
+| CI/CD security gates | Real GitHub Actions workflow | Runs scans and validation in `.github/workflows/sentinel-ci-cd.yaml`. |
+| Drift detection workflow | Real workflow | Requires Azure OIDC and remote state secrets to run against an environment. |
+| UI incident/telemetry data | Demo/simulated unless labelled otherwise | Used to demonstrate reviewer flow without requiring a paid always-on lab. |
+| Detection assertion | Metadata/sample validation locally; optional live script separately | Local validation does not execute KQL or prove a Sentinel alert fired. |
+| SOAR response | Terraform shell/design unless connected and tested live | Treat as a human-approved containment design until run history evidence is captured. |
+| Threat intelligence UI | Demo/API-dependent | Public feeds may fail due to browser/CORS limits and fall back to demo data. |
+
+## Key Features
+
+- Reviewer Mode for a 5-minute senior-engineer review path.
+- Evidence Center for proof paths, missing screenshot placeholders, and real-vs-demo inventory.
+- Interview Mode with skill matrix, hard questions, safe resume bullets, and non-claims.
+- Flagship Entra ID password spray walkthrough.
+- PrimeReact UI for detection rules, cloud controls, drift, SOAR design, and demo workflows.
+- Detection metadata/sample validation runner.
+- Optional live Sentinel validation script for configured Azure environments.
+
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| `.github/workflows/` | CI/CD and drift detection workflows. |
+| `src-cli/` | Go-based Sentinel rule deployer and validation logic. |
+| `sentinel-detection-pack/rules-yaml/` | Sentinel analytics rule definitions. |
+| `sentinel-detection-pack/rules/` | KQL source files with rule metadata. |
+| `sentinel-detection-pack/sample-data/` | JSONL sample telemetry for local validation. |
+| `sentinel-detection-pack/ui/` | React + PrimeReact reviewer UI. |
+| `terraform/` | Sentinel core infrastructure. |
+| `terraform-policy/` | Azure Policy examples for cloud security guardrails. |
+| `terraform-soar/` | Logic App SOAR shell and human-approved workflow design. |
+| `terraform-aws-connector/` | AWS CloudTrail connector pattern with S3/KMS/IAM trust. |
+| `docs/detection-engineering/` | Rule quality standard, tuning, false positives, and coverage matrix. |
+| `docs/adr/` | Architecture Decision Records and tradeoffs. |
+| `evidence/` | Sanitized screenshot/artifact collection structure. |
+| `scripts/` | Validation, test, optional live verification, ChatOps, and demo scripts. |
+
+## Detection-as-Code
+
+Rules are modeled as YAML/KQL so metadata can be reviewed and validated. The Go deployer supports dry-run explain output and validation reporting for rule fields such as severity, query period/frequency, MITRE mapping, entity mappings, custom details, alert details, incident configuration, and connector requirements.
+
+Important files:
+
+- `src-cli/deployer.go`
+- `src-cli/deployer_test.go`
+- `src-cli/README.md`
+- `scripts/test-detections.py`
+- `docs/detection-engineering/rule-quality-standard.md`
+
+## Cloud Security Infrastructure
+
+Terraform modules show how the lab would be deployed and governed:
+
+- Sentinel core and Log Analytics workspace pattern in `terraform/`.
+- Azure Policy guardrails in `terraform-policy/`.
+- Human-approved SOAR design in `terraform-soar/`.
+- AWS CloudTrail ingestion pattern in `terraform-aws-connector/`.
+- Temporary honeypot lab infrastructure in `terraform-honeypot/`.
+
+## CI/CD and Drift Detection
+
+`.github/workflows/sentinel-ci-cd.yaml` validates security scans, Go code, UI build, Terraform modules, and detection metadata/sample coverage. `.github/workflows/drift-detection.yaml` documents the scheduled Terraform drift check and issue creation pattern.
+
+## SOAR
+
+The SOAR content is intentionally labelled as a human-approved containment design. It shows how a Logic App could parse a Sentinel incident, check approved scope, request approval, apply scoped action only after approval, notify the SOC channel, and write the result back to the incident.
+
+Docs:
+
+- `docs/soar/human-approved-containment.md`
+- `docs/soar/least-privilege-identity.md`
+- `docs/soar/failure-modes.md`
+
+## UI Reviewer Experience
+
+Prioritize these routes:
+
+- `/` or `/reviewer` — Start Here guided review path.
+- `/evidence` — proof inventory and missing evidence placeholders.
+- `/interview` — skill matrix and interview preparation.
+- `/scenario/password-spray` — flagship detection walkthrough.
+- `/cloud-security-controls` — cloud security posture story.
+- `/decisions` — ADR summaries.
+
+Secondary demo pages live under **Lab Sandbox** in the sidebar.
+
+## Automated reviewer evidence
+
+```bash
+cd sentinel-detection-pack/ui
+npm ci --ignore-scripts
+npx playwright install --with-deps
+npm run evidence:all
+```
+
+GitHub Actions workflow `.github/workflows/portfolio-evidence.yml` uploads:
+
+- `portfolio-ui-screenshots` — UI captures for the reviewer path
+- `playwright-report` — HTML test report
+
+UI screenshots prove the reviewer UI works. They do **not** replace Azure/Sentinel tenant screenshots.
+
+## Evidence Folder
+
+The `evidence/` folder defines where sanitized proof artifacts should be stored. Do not commit sensitive tenant data. Follow `evidence/README.md` for what to blur and what each screenshot proves.
+
+## Local Development
 
 ```bash
 cd sentinel-detection-pack/ui
 npm install
-npm run dev      # http://localhost:3000
+npm run dev
 ```
 
-Highlights of the console:
+Run local detection metadata/sample validation:
 
-- **Guided tour** (first-visit + replayable) and a `⌘K` **command palette** for navigation.
-- **Command Center** · **Reference Architecture** (live ReactFlow topology).
-- **Compliance & Controls** — CIS Azure + NIST CSF mapped to the real implementation.
-- **Architecture Decisions** — ADRs with context / decision / why / trade-off (also in `docs/adr/`).
-- **AppSec & Supply Chain** (Gitleaks / TFSec / Trivy, published to GitHub code scanning as SARIF).
-- **IaC Drift & Pipeline**, **Infrastructure as Code** (renders the real Terraform/Go/workflow source).
-- **Detection Deep-Dive** (tuning + false-positive analysis), **Learning Paths** (cert-aligned).
-- **Security FinOps**, **SOAR Playbooks**, **AI Copilot**, and the detection / threat tooling.
+```bash
+python scripts/test-detections.py
+```
 
-`npm run sync-data` bundles the live repo source into the UI at build time.
+Run the Go deployer tests:
 
-## Security hardening highlights
+```bash
+cd src-cli
+go test ./...
+```
 
-- Honeypot admin credential generated via `random_password` (was a committed plaintext password).
-- CloudTrail S3 bucket: customer-managed **KMS** encryption + key rotation, public-access block,
-  versioning, and a scoped CloudTrail bucket policy.
-- SOAR identity scoped to **Network Contributor on the resource group**, not subscription-wide.
-- CI security scans **fail the build** on HIGH/CRITICAL findings; Trivy results publish to GitHub code scanning (SARIF).
-- **Azure Policy enforcement** (`terraform-policy/`): deny/audit definitions + Microsoft Cloud Security Benchmark — prevention to complement detection.
+## Deployment
 
-## License
+Live deployment is optional and requires cloud credentials, workspace IDs, tenant-specific variables, and safe lab resources. Use dry-run validation first:
 
-MIT — see [`sentinel-detection-pack/LICENSE`](sentinel-detection-pack/LICENSE).
+```bash
+cd src-cli
+go run . -rules ../sentinel-detection-pack/rules-yaml -dry-run -explain
+```
+
+## Known Limitations
+
+- The UI uses demo telemetry unless a page clearly says an API is configured.
+- Local detection validation checks metadata and sample data; it does not execute KQL.
+- Optional live Sentinel validation requires Azure credentials and a configured workspace.
+- SOAR containment is documented as human-approved design until live run history is captured.
+- Evidence screenshots are placeholders until sanitized artifacts are added.
+- This is not a SOC 2, ISO 27001, or NIST certification package.
+
+## Interview Talking Points
+
+- Why scheduled Sentinel rules were chosen before NRT rules.
+- How entity mappings and custom details improve investigation quality.
+- How password spray thresholds are tuned and why allowlists matter.
+- How GitHub OIDC reduces CI/CD secret risk.
+- How Terraform drift becomes a security signal.
+- What would be required to convert local validation into live Sentinel assertion.
+- How to control Sentinel ingestion costs in a lab.
+
+## Roadmap
+
+- Add sanitized screenshots to `evidence/`.
+- Parse GitHub Actions artifacts/SARIF into the UI instead of using demo AppSec rows.
+- Add optional live Sentinel validation to CI for a dedicated lab workspace.
+- Add ASIM variants for selected detections.
+- Add Defender portal screenshots and mapping evidence.
+- Add a small release checklist for safe live-lab teardown.
+
+## Safe Positioning
+
+Safe claim: "I built a Microsoft Sentinel cloud security detection engineering lab with repo-backed KQL rules, Terraform modules, CI/CD validation, drift detection, SOAR design, and a UI that clearly separates real code from demo telemetry."
+
+Do not claim: production SOC, enterprise MDR platform, autonomous containment, compliance certification, or fully live telemetry.

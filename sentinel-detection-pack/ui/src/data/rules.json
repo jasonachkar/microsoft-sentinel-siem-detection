@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-22T16:33:09.717Z",
+  "generatedAt": "2026-05-24T18:07:43.736Z",
   "total": 16,
   "rules": [
     {
@@ -129,12 +129,8 @@
       "queryFrequency": "PT5M",
       "queryPeriod": "PT1H",
       "triggerOperator": "GreaterThan",
-      "triggerThreshold": "0",
-      "category": "cloud",
-      "dataSources": [
-        "AKSAudit",
-        "AKSAuditAdmin"
-      ],
+      "category": "unknown",
+      "dataSources": [],
       "connectors": [
         "AzureKubernetesService"
       ],
@@ -163,7 +159,7 @@
         }
       ],
       "status": "Production",
-      "falsePositives": "Authorized cluster administration, break-glass troubleshooting, or approved SRE maintenance",
+      "falsePositives": "Review and tune for environment",
       "query": "let suspicious_commands = dynamic([\"/bin/bash\", \"/bin/sh\", \"curl\", \"wget\", \"nc\"]);\nAKSAuditAdmin\n| where Category == \"kube-audit\"\n| extend log_json = parse_json(Log)\n| where log_json.verb == \"create\"\n| where log_json.objectRef.resource == \"pods\" and log_json.objectRef.subresource == \"exec\"\n| extend command = tostring(log_json.requestObject.command)\n| where command has_any (suspicious_commands)\n| project TimeGenerated,\n    User=tostring(log_json.user.username),\n    Pod=tostring(log_json.objectRef.name),\n    Namespace=tostring(log_json.objectRef.namespace),\n    Command=command,\n    SourceIP=tostring(log_json.sourceIPs[0])\n| extend AccountCustomEntity = User\n| extend IPCustomEntity = SourceIP\n"
     },
     {

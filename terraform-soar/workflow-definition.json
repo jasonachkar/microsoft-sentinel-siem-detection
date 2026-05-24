@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "allowedContainmentResourceGroup": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "teamsWebhookUrl": {
+      "type": "SecureString",
+      "defaultValue": ""
+    }
+  },
+  "triggers": {
+    "sentinel_incident_trigger": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "incidentId": { "type": "string" },
+            "severity": { "type": "string" },
+            "entities": { "type": "array" },
+            "resourceGroup": { "type": "string" },
+            "sourceIp": { "type": "string" }
+          },
+          "required": ["incidentId", "severity", "entities"]
+        }
+      }
+    }
+  },
+  "actions": {
+    "validate_scope": {
+      "type": "If",
+      "expression": {
+        "and": [
+          {
+            "equals": [
+              "@triggerBody()?['resourceGroup']",
+              "@parameters('allowedContainmentResourceGroup')"
+            ]
+          },
+          {
+            "or": [
+              { "equals": ["@triggerBody()?['severity']", "High"] },
+              { "equals": ["@triggerBody()?['severity']", "Critical"] }
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "request_human_approval": {
+          "type": "Compose",
+          "inputs": {
+            "message": "Human approval required before containment. Reviewer must confirm target, blast radius, rollback plan, and business impact."
+          }
+        },
+        "containment_placeholder": {
+          "runAfter": {
+            "request_human_approval": ["Succeeded"]
+          },
+          "type": "Compose",
+          "inputs": {
+            "message": "Approved path would apply a scoped NSG deny rule or quarantine tag, then write the outcome to the Sentinel incident."
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "record_no_action": {
+            "type": "Compose",
+            "inputs": {
+              "message": "No containment action. Incident target is outside the approved lab scope or severity threshold."
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {}
+}

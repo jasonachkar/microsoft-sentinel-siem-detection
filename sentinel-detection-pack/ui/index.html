@@ -2,26 +2,23 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="SentinelOS - a multi-cloud DevSecOps & Detection-as-Code platform for Microsoft Sentinel: Infrastructure-as-Code, a policy-gated CI/CD pipeline, CIS/NIST compliance mapping, and an AI-assisted SOC control plane." />
+    <meta name="description" content="Microsoft Sentinel Cloud Security Detection Engineering Lab: repo-backed KQL rules, Terraform infrastructure, CI/CD security gates, drift detection, SOAR design, and clearly labelled demo telemetry." />
     <meta name="theme-color" content="#0b0f19" />
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="SentinelOS — Cloud Security Operations Platform" />
-    <meta property="og:description" content="Multi-cloud DevSecOps & Detection-as-Code for Microsoft Sentinel: IaC, policy-gated CI/CD, CIS/NIST compliance, and an AI-assisted SOC." />
+    <meta property="og:title" content="Microsoft Sentinel Cloud Security Detection Engineering Lab" />
+    <meta property="og:description" content="Portfolio lab for Microsoft Sentinel Detection-as-Code, KQL analytics rules, Terraform-managed cloud security infrastructure, CI/CD gates, drift detection, and SOAR design." />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="SentinelOS" />
+    <meta property="og:site_name" content="Sentinel Detection Lab" />
 
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="SentinelOS — Cloud Security Operations Platform" />
-    <meta name="twitter:description" content="Multi-cloud DevSecOps & Detection-as-Code for Microsoft Sentinel: IaC, policy-gated CI/CD, CIS/NIST compliance, and an AI-assisted SOC." />
+    <meta name="twitter:title" content="Microsoft Sentinel Cloud Security Detection Engineering Lab" />
+    <meta name="twitter:description" content="Portfolio lab for Sentinel Detection-as-Code, KQL rules, Terraform infrastructure, CI/CD gates, drift detection, and SOAR design." />
 
-    <title>SentinelOS | Cloud Security Operations Platform</title>
-    
+    <title>Microsoft Sentinel Cloud Security Detection Engineering Lab</title>
+
     <style>
-      /* Loading state */
       #root:empty::after {
         content: '';
         position: fixed;
@@ -35,9 +32,9 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
-      
+
       #root:empty::before {
-        content: 'Loading SentinelOS...';
+        content: 'Loading Sentinel Detection Lab...';
         position: fixed;
         top: calc(50% + 40px);
         left: 50%;
@@ -46,11 +43,13 @@
         font-family: system-ui, -apple-system, sans-serif;
         font-size: 14px;
       }
-      
+
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
-      
+
       html {
         background-color: #020617;
       }

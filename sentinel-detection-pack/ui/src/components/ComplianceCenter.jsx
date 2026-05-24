@@ -5,7 +5,7 @@ import { DataTable } from 'primereact/datatable';
 import { Tag } from 'primereact/tag';
 
 const outcomes = [
-  { label: 'Controls mapped', value: '20+', sub: 'CIS Azure + NIST CSF' },
+  { label: 'Controls mapped', value: '20+', sub: 'Lab mapping only' },
   { label: 'HIGH/CRITICAL fixed', value: '5', sub: 'IaC findings remediated' },
   { label: 'Secrets removed', value: '1', sub: 'scrubbed from git history' },
   { label: 'Blast radius cut', value: 'Sub → RG', sub: 'SOAR RBAC re-scoped' },
@@ -90,9 +90,9 @@ export default function ComplianceCenter() {
               <i className="pi pi-check-square text-xl" />
             </span>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-teal-200">Compliance &amp; Controls</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-teal-200">Controls Mapping</h1>
               <p className="text-gray-400">
-                CIS Microsoft Azure Foundations &amp; NIST CSF coverage, mapped to the controls actually implemented in this repo.
+                Cloud security control references mapped to repo artifacts. This is not a certification or audit report.
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function ComplianceCenter() {
         ))}
       </div>
 
-      <Card title="NIST Cybersecurity Framework" className="border border-dark-700 bg-dark-900 shadow-xl">
+      <Card title="Cybersecurity Framework Reference Mapping" className="border border-dark-700 bg-dark-900 shadow-xl">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {nistFunctions.map((f) => (
             <div key={f.fn} className="rounded-lg border border-dark-700 bg-dark-950 p-4">
@@ -137,7 +137,7 @@ export default function ComplianceCenter() {
         </div>
       </Card>
 
-      <Card title="CIS Azure Foundations Benchmark — Control Mapping" className="border border-dark-700 bg-dark-900 shadow-xl">
+      <Card title="Azure Security Control Reference Mapping" className="border border-dark-700 bg-dark-900 shadow-xl">
         <DataTable value={cisControls} size="small" className="p-datatable-sm" responsiveLayout="scroll">
           <Column field="id" header="#" className="font-mono text-gray-500" />
           <Column field="area" header="Area" />
@@ -150,7 +150,7 @@ export default function ComplianceCenter() {
           Controls marked <span className="font-semibold">Detect</span> provide detection coverage, not hard prevention.
           Preventative enforcement is wired via <span className="font-mono">terraform-policy</span> (Azure Policy deny/audit +
           the Microsoft Cloud Security Benchmark initiative); identity controls are best paired with Conditional Access. The
-          detect/prevent distinction is exactly what an auditor expects you to articulate.
+          detect/prevent distinction is important when explaining what this lab does and does not enforce.
         </div>
       </Card>
 

@@ -36,7 +36,10 @@ export default function LivePostureDashboard() {
           </span>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-blue-200">Infrastructure-as-Code Posture</h1>
-            <p className="text-gray-400">Azure Resource Graph validation for Terraform deployments and multi-cloud resources.</p>
+            <p className="text-gray-400">Demo Azure Resource Graph-shaped posture data for Terraform and multi-cloud resources.</p>
+            <div className="mt-2">
+              <Tag value="Demo data" severity="warning" />
+            </div>
           </div>
         </div>
       </section>

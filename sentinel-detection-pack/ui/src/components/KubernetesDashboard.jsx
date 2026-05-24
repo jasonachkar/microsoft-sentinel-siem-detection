@@ -58,6 +58,9 @@ export default function KubernetesDashboard() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-purple-200">Cloud-Native Kubernetes Telemetry</h1>
             <p className="text-gray-400">Streaming simulated AKS/EKS API server audit logs mapping to MITRE T1609.</p>
+            <div className="mt-2">
+              <Tag value="Simulated telemetry" severity="warning" />
+            </div>
           </div>
         </div>
       </section>

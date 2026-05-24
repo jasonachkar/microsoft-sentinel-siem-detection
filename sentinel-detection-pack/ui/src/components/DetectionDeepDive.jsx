@@ -27,13 +27,13 @@ const tuningParams = [
   { param: 'MinDistinctAccounts', value: '8', rationale: 'Spray is wide-and-shallow. Distinct accounts is the strongest spray signal vs. a single-account brute force.' },
   { param: 'MinFailures', value: '20', rationale: 'Volume floor per 15-min bin from one source/app. Raise in noisy tenants, lower for high-value apps.' },
   { param: 'BinSize', value: '15m', rationale: 'Short enough to catch bursts, long enough to aggregate a slow spray. Pair with QueryFrequency PT5M for overlap.' },
-  { param: 'ResultType filter', value: '50126, 50125, 50053, 50055, 50057', rationale: 'Invalid credentials, locked, disabled, expired — the outcomes a spray actually produces. Excludes benign MFA prompts.' },
+  { param: 'ResultType filter', value: '50126, 50125, 50053, 50055, 50057', rationale: 'Invalid credentials, locked, disabled, expired - the outcomes a spray actually produces. Excludes benign MFA prompts.' },
   { param: 'AllowedIPs', value: 'dynamic([])', rationale: 'Allowlist corporate egress / VPN concentrators that legitimately generate bulk failures.' },
 ];
 
 const falsePositives = [
   { source: 'VPN / NAT egress', detail: 'Many users behind one corporate IP can look like one source spraying many accounts.', mitigation: 'Add the egress range to AllowedIPs; pivot on AppDisplayName + UserAgent.' },
-  { source: 'Misconfigured app / cached creds', detail: 'A service or device replaying stale credentials drives failures for one account, not many.', mitigation: 'DistinctAccounts ≥ 8 already filters single-account noise.' },
+  { source: 'Misconfigured app / cached creds', detail: 'A service or device replaying stale credentials drives failures for one account, not many.', mitigation: 'DistinctAccounts >= 8 already filters single-account noise.' },
   { source: 'Load / pen tests', detail: 'Authorized testing generates spray-shaped telemetry.', mitigation: 'Allowlist the test source and coordinate change windows.' },
   { source: 'Legacy auth protocols', detail: 'Basic-auth clients fail in bursts after a password change.', mitigation: 'Correlate ClientAppUsed; drive toward blocking legacy auth via Conditional Access.' },
 ];
@@ -75,7 +75,7 @@ export default function DetectionDeepDive() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-purple-200">Detection Engineering Deep-Dive</h1>
             <p className="text-gray-400">
-              How a production detection is actually reasoned about — logic, tuning, false positives, validation, and response.
+              How a deployable Sentinel detection is reasoned about: logic, tuning, false positives, validation, and response.
             </p>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function DetectionDeepDive() {
               'Filter SigninLogs to invalid-credential outcomes only — the failure types a spray actually produces, not benign MFA noise.',
               'Drop trusted egress IPs (AllowedIPs) to suppress VPN/NAT false positives at the source.',
               'Bin events into 15-minute windows and aggregate by source IP and application.',
-              'Alert only when both volume (FailedCount ≥ 20) and breadth (DistinctAccounts ≥ 8) cross threshold — the two-signal AND is what distinguishes spray from a single-account brute force.',
+              'Alert only when both volume (FailedCount >= 20) and breadth (DistinctAccounts >= 8) cross threshold - the two-signal AND is what distinguishes spray from a single-account brute force.',
               'Emit the targeted account set so the analyst can immediately check for a subsequent success.',
             ].map((t, i) => (
               <li key={i} className="flex gap-3">
@@ -153,12 +153,12 @@ export default function DetectionDeepDive() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Validation (Detection-as-Code)" className="border border-dark-700 bg-dark-900 shadow-xl">
           <p className="text-sm text-gray-400">
-            The rule is asserted in CI against Atomic Red Team telemetry (T1110.003) via
-            <span className="font-mono text-gray-300"> scripts/assert-detection.py</span> before any deploy is trusted.
+            The rule is validated locally with metadata and sample telemetry via
+            <span className="font-mono text-gray-300"> scripts/test-detections.py</span>. Live Sentinel alert assertion remains optional.
           </p>
           <div className="mt-3 rounded-lg border border-emerald-500/30 bg-dark-950 p-3 font-mono text-sm text-emerald-300">
             <i className="pi pi-check-circle mr-2" />
-            assert: rule fires on ≥ 8 accounts / 20 failures — PASSED
+            metadata/sample validation: positive and benign samples present
           </div>
           <Link to="/simulator" className="mt-3 inline-flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200">
             <i className="pi pi-bolt" /> Run the matching attack simulation

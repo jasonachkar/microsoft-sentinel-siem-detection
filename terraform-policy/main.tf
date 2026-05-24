@@ -89,6 +89,98 @@ resource "azurerm_policy_definition" "audit_unencrypted_vm" {
   })
 }
 
+# 4. Deny anonymous public access on blob containers.
+resource "azurerm_policy_definition" "deny_public_blob_access" {
+  name         = "deny-public-blob-container-access"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "Deny public blob container access"
+  description  = "Blocks blob containers that allow anonymous public access."
+
+  policy_rule = jsonencode({
+    if = {
+      allOf = [
+        { field = "type", equals = "Microsoft.Storage/storageAccounts/blobServices/containers" },
+        { field = "Microsoft.Storage/storageAccounts/blobServices/containers/publicAccess", notEquals = "None" }
+      ]
+    }
+    then = { effect = "deny" }
+  })
+}
+
+# 5. Audit public IP resources so internet exposure is visible.
+resource "azurerm_policy_definition" "audit_public_ip" {
+  name         = "audit-public-ip-resources"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "Audit public IP resources"
+  description  = "Flags public IP resources for review and exposure tracking."
+
+  policy_rule = jsonencode({
+    if = {
+      field  = "type"
+      equals = "Microsoft.Network/publicIPAddresses"
+    }
+    then = { effect = "audit" }
+  })
+}
+
+# 6. Require core ownership tags for cost and accountability.
+resource "azurerm_policy_definition" "require_owner_environment_tags" {
+  name         = "audit-missing-owner-environment-tags"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "Audit resources missing owner/environment tags"
+  description  = "Flags resources that are missing owner or environment tags."
+
+  policy_rule = jsonencode({
+    if = {
+      anyOf = [
+        { field = "tags['owner']", exists = "false" },
+        { field = "tags['environment']", exists = "false" }
+      ]
+    }
+    then = { effect = "audit" }
+  })
+}
+
+# 7. Audit storage accounts that allow TLS versions below 1.2.
+resource "azurerm_policy_definition" "audit_weak_storage_tls" {
+  name         = "audit-storage-weak-tls"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "Audit storage accounts with weak TLS"
+  description  = "Flags storage accounts that do not require TLS 1.2 or newer."
+
+  policy_rule = jsonencode({
+    if = {
+      allOf = [
+        { field = "type", equals = "Microsoft.Storage/storageAccounts" },
+        { field = "Microsoft.Storage/storageAccounts/minimumTlsVersion", notEquals = "TLS1_2" }
+      ]
+    }
+    then = { effect = "audit" }
+  })
+}
+
+# 8. Audit Key Vault diagnostic settings. A deployIfNotExists version would need
+# workspace-specific parameters and managed identity permissions.
+resource "azurerm_policy_definition" "audit_keyvault_diagnostics" {
+  name         = "audit-keyvault-diagnostics"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "Audit Key Vault diagnostic settings"
+  description  = "Flags Key Vault resources so diagnostic settings can be routed to Log Analytics/Sentinel."
+
+  policy_rule = jsonencode({
+    if = {
+      field  = "type"
+      equals = "Microsoft.KeyVault/vaults"
+    }
+    then = { effect = "audit" }
+  })
+}
+
 # Assign the custom deny policies at subscription scope.
 resource "azurerm_subscription_policy_assignment" "require_https_storage" {
   name                 = "require-https-storage"
@@ -111,7 +203,42 @@ resource "azurerm_subscription_policy_assignment" "audit_unencrypted_vm" {
   policy_definition_id = azurerm_policy_definition.audit_unencrypted_vm.id
 }
 
-# 4. Assign the built-in Microsoft Cloud Security Benchmark initiative for
+resource "azurerm_subscription_policy_assignment" "deny_public_blob_access" {
+  name                 = "deny-public-blob-access"
+  display_name         = "Deny public blob container access"
+  subscription_id      = local.subscription_scope
+  policy_definition_id = azurerm_policy_definition.deny_public_blob_access.id
+}
+
+resource "azurerm_subscription_policy_assignment" "audit_public_ip" {
+  name                 = "audit-public-ip"
+  display_name         = "Audit public IP resources"
+  subscription_id      = local.subscription_scope
+  policy_definition_id = azurerm_policy_definition.audit_public_ip.id
+}
+
+resource "azurerm_subscription_policy_assignment" "require_owner_environment_tags" {
+  name                 = "audit-owner-env-tags"
+  display_name         = "Audit owner/environment tags"
+  subscription_id      = local.subscription_scope
+  policy_definition_id = azurerm_policy_definition.require_owner_environment_tags.id
+}
+
+resource "azurerm_subscription_policy_assignment" "audit_weak_storage_tls" {
+  name                 = "audit-storage-weak-tls"
+  display_name         = "Audit storage weak TLS"
+  subscription_id      = local.subscription_scope
+  policy_definition_id = azurerm_policy_definition.audit_weak_storage_tls.id
+}
+
+resource "azurerm_subscription_policy_assignment" "audit_keyvault_diagnostics" {
+  name                 = "audit-keyvault-diagnostics"
+  display_name         = "Audit Key Vault diagnostic settings"
+  subscription_id      = local.subscription_scope
+  policy_definition_id = azurerm_policy_definition.audit_keyvault_diagnostics.id
+}
+
+# 9. Assign the built-in Microsoft Cloud Security Benchmark initiative for
 #    continuous, audit-wide compliance baselining.
 data "azurerm_policy_set_definition" "mcsb" {
   display_name = "Microsoft cloud security benchmark"

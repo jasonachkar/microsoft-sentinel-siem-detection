@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
+import ReviewerMode from './components/ReviewerMode';
+import EvidenceCenter from './components/EvidenceCenter';
+import InterviewMode from './components/InterviewMode';
+import PasswordSprayScenario from './components/PasswordSprayScenario';
 import CommandCenter from './components/CommandCenter';
 import Dashboard from './components/Dashboard';
 import ThreatMap from './components/ThreatMap';
@@ -16,6 +20,7 @@ import SoarDashboard from './components/SoarDashboard';
 import AICopilot from './components/AICopilot';
 import FinOpsDashboard from './components/FinOpsDashboard';
 import InfrastructurePosture from './components/InfrastructurePosture';
+import CloudSecurityControls from './components/CloudSecurityControls';
 import LivePostureDashboard from './components/LivePostureDashboard';
 import KubernetesDashboard from './components/KubernetesDashboard';
 import LiveIncidentsDashboard from './components/LiveIncidentsDashboard';
@@ -43,7 +48,12 @@ export default function App() {
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/" element={<CommandCenter />} />
+            <Route path="/" element={<ReviewerMode />} />
+            <Route path="/reviewer" element={<ReviewerMode />} />
+            <Route path="/evidence" element={<EvidenceCenter />} />
+            <Route path="/interview" element={<InterviewMode />} />
+            <Route path="/scenario/password-spray" element={<PasswordSprayScenario />} />
+            <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/threat-map" element={<ThreatMap />} />
             <Route path="/incidents" element={<Incidents />} />
@@ -60,6 +70,7 @@ export default function App() {
             <Route path="/copilot" element={<AICopilot />} />
             <Route path="/ai-copilot" element={<AICopilot />} />
             <Route path="/finops" element={<FinOpsDashboard />} />
+            <Route path="/cloud-security-controls" element={<CloudSecurityControls />} />
             <Route path="/appsec" element={<AppSecDashboard />} />
             <Route path="/drift" element={<TerraformDrift />} />
             <Route path="/iac" element={<IaCExplorer />} />

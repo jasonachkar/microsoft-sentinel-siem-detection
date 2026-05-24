@@ -155,6 +155,8 @@ required_fields = {
     "CommonSecurityLog": {"TimeGenerated", "SourceIP", "DestinationIP"},
     "AzureDiagnostics": {"TimeGenerated", "ResourceProvider", "OperationName", "ResourceId"},
     "AzureActivity": {"TimeGenerated", "OperationNameValue", "Caller", "ActivityStatusValue"},
+    "AKSAuditAdmin": {"TimeGenerated", "Category", "Log"},
+    "CloudTrail": {"eventTime", "eventSource", "eventName", "userIdentity", "sourceIPAddress"},
 }
 
 sample_dir = root / "sample-data"

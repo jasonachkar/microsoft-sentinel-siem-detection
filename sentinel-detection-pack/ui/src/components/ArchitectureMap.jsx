@@ -78,16 +78,16 @@ const initialNodes = [
 
   N('connectors', 300, 245, { kind: 'connectors', title: 'Data Connectors', sub: 'Normalize & ingest', accent: 'cyan' }),
 
-  N('cicd', 300, -80, { kind: 'cicd', title: 'GitHub Actions', sub: 'Scan · validate · deploy', accent: 'amber', tag: 'Gitleaks/TFSec/Trivy' }),
-  N('rules', 580, 40, { kind: 'rules', title: '16 KQL Detections', sub: 'Detection-as-Code', accent: 'emerald', tag: 'Go CLI → ARM' }),
+  N('cicd', 300, -80, { kind: 'cicd', title: 'GitHub Actions', sub: 'Scan, validate, deploy', accent: 'amber', tag: 'Gitleaks/TFSec/Trivy' }),
+  N('rules', 580, 40, { kind: 'rules', title: '16 KQL Detections', sub: 'Detection-as-Code', accent: 'emerald', tag: 'Go CLI to ARM' }),
 
   N('sentinel', 580, 250, { kind: 'sentinel', title: 'Microsoft Sentinel', sub: 'Log Analytics workspace', accent: 'blue', primary: true }),
 
-  N('copilot', 880, 120, { kind: 'copilot', title: 'AI SOC Copilot', sub: 'Triage & summarize', accent: 'purple' }),
-  N('soar', 880, 250, { kind: 'soar', title: 'SOAR Logic App', sub: 'Auto-remediation', accent: 'emerald' }),
-  N('incidents', 880, 380, { kind: 'incidents', title: 'Incident Queue', sub: 'Analyst console', accent: 'red' }),
+  N('copilot', 880, 120, { kind: 'copilot', title: 'Copilot Concept', sub: 'Demo triage summary', accent: 'purple' }),
+  N('soar', 880, 250, { kind: 'soar', title: 'SOAR Logic App', sub: 'Human-reviewed design', accent: 'emerald' }),
+  N('incidents', 880, 380, { kind: 'incidents', title: 'Incident Workflow', sub: 'Demo analyst flow', accent: 'red' }),
 
-  N('containment', 1180, 250, { kind: 'containment', title: 'Containment', sub: 'NSG isolate · revoke sessions', accent: 'orange' }),
+  N('containment', 1180, 250, { kind: 'containment', title: 'Containment Design', sub: 'NSG isolate / revoke sessions', accent: 'orange' }),
 ];
 
 const edge = (id, source, target, opts = {}) => ({
@@ -112,10 +112,10 @@ const initialEdges = [
   edge('e-ingest', 'connectors', 'sentinel', { color: '#22d3ee', animated: true, width: 2, label: 'ingest' }),
   edge('e-cicd-rules', 'cicd', 'rules', { color: '#f59e0b', animated: true, label: 'validate + deploy' }),
   edge('e-rules', 'rules', 'sentinel', { color: '#10b981', animated: true, label: 'scheduled alert rules' }),
-  edge('e-copilot', 'sentinel', 'copilot', { color: '#a855f7', animated: true, label: 'AI triage' }),
+  edge('e-copilot', 'sentinel', 'copilot', { color: '#a855f7', animated: true, label: 'demo triage' }),
   edge('e-soar', 'sentinel', 'soar', { color: '#10b981', animated: true, label: 'incident trigger' }),
   edge('e-incidents', 'sentinel', 'incidents', { color: '#ef4444', label: 'alerts' }),
-  edge('e-contain', 'soar', 'containment', { color: '#f97316', animated: true, label: 'auto-isolate' }),
+  edge('e-contain', 'soar', 'containment', { color: '#f97316', animated: true, label: 'approval then isolate' }),
 ];
 
 const legend = [
@@ -139,7 +139,7 @@ export default function ArchitectureMap() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-blue-200">Reference Architecture</h1>
             <p className="text-gray-400">
-              End-to-end multi-cloud detection &amp; response flow &mdash; from telemetry ingestion to automated containment.
+              End-to-end multi-cloud detection and response lab flow, with repo-backed and demo components labelled.
             </p>
           </div>
         </div>

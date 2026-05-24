@@ -287,7 +287,7 @@ function ScenarioCard({ scenario, isSelected, isRunning, onSelect, onStart }) {
             </div>
             <div className="flex items-center gap-1">
               <Code className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>Live scripts</span>
+              <span>Demo script flow</span>
             </div>
           </div>
         </div>
@@ -431,11 +431,14 @@ export default function AttackSimulator() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
             <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
-            Attack Simulator
+            Attack Scenario Visualizer
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
-            Execute realistic attack scenarios with live script visualization
+            Review simulated attack scenarios with expected script, telemetry, and detection artifacts
           </p>
+          <span className="mt-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+            Simulated scenario
+          </span>
         </div>
         
         {isRunning && (

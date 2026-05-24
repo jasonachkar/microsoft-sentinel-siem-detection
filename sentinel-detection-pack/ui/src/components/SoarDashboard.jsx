@@ -11,42 +11,51 @@ import { Timeline } from 'primereact/timeline';
 const initialPlaybooks = [
   {
     id: 1,
-    name: 'Isolate Compromised VM',
-    target: 'Azure Network Security Group',
-    status: 'idle',
-    lastRun: '2 hours ago',
+    name: 'Human-approved VM isolation',
+    target: 'Scoped Azure Network Security Group',
+    status: 'design',
+    lastRun: 'Demo only',
     severity: 'High',
   },
   {
     id: 2,
-    name: 'Revoke Entra ID Sessions',
-    target: 'Microsoft Graph',
-    status: 'idle',
-    lastRun: '1 day ago',
+    name: 'Review Entra ID session revocation',
+    target: 'Microsoft Graph permission design',
+    status: 'design',
+    lastRun: 'Demo only',
     severity: 'Critical',
   },
   {
     id: 3,
-    name: 'Block Malicious IP in Firewall',
-    target: 'Azure Firewall policy',
-    status: 'idle',
-    lastRun: '5 mins ago',
+    name: 'Malicious IP block approval',
+    target: 'Approved firewall or NSG scope',
+    status: 'design',
+    lastRun: 'Demo only',
     severity: 'Medium',
   },
 ];
 
+const workflowSteps = [
+  { step: 'Incident trigger', status: 'repo-backed', detail: 'Sentinel incident payload starts the Logic App flow.' },
+  { step: 'Entity parsing', status: 'design', detail: 'Host, IP, account, and resource fields are normalized for review.' },
+  { step: 'Scope check', status: 'repo-backed', detail: 'Target must match the approved lab containment resource group.' },
+  { step: 'Human approval', status: 'required', detail: 'Analyst confirms blast radius, target, and rollback path.' },
+  { step: 'Containment action', status: 'design', detail: 'Approved path would apply NSG deny rule or quarantine tag.' },
+  { step: 'Incident comment', status: 'design', detail: 'Outcome should be written back to Sentinel for evidence.' },
+];
+
 const statusSeverity = {
-  idle: 'info',
-  running: 'warning',
-  success: 'success',
+  design: 'info',
+  approval: 'warning',
+  simulated: 'success',
 };
 
 export default function SoarDashboard() {
   const [playbooks, setPlaybooks] = useState(initialPlaybooks);
   const [logs, setLogs] = useState([]);
 
-  const runningCount = useMemo(() => playbooks.filter((playbook) => playbook.status === 'running').length, [playbooks]);
-  const successCount = useMemo(() => playbooks.filter((playbook) => playbook.status === 'success').length, [playbooks]);
+  const approvalCount = useMemo(() => playbooks.filter((playbook) => playbook.status === 'approval').length, [playbooks]);
+  const simulatedCount = useMemo(() => playbooks.filter((playbook) => playbook.status === 'simulated').length, [playbooks]);
 
   const appendLog = (message, status = 'info') => {
     setLogs((current) => [
@@ -60,20 +69,20 @@ export default function SoarDashboard() {
     ]);
   };
 
-  const triggerPlaybook = (id, name) => {
+  const simulateApproval = (id, name) => {
     setPlaybooks((current) => current.map((playbook) => (
-      playbook.id === id ? { ...playbook, status: 'running' } : playbook
+      playbook.id === id ? { ...playbook, status: 'approval' } : playbook
     )));
-    appendLog(`Triggering Azure Logic App playbook: ${name}`, 'warning');
+    appendLog(`Created approval request for playbook design: ${name}`, 'warning');
 
     window.setTimeout(() => {
-      appendLog('Authenticating to Azure Resource Manager with managed identity.', 'info');
+      appendLog('Scope check passed for approved lab containment resource group.', 'info');
     }, 750);
 
     window.setTimeout(() => {
-      appendLog('Applied containment action and wrote SOAR evidence to Sentinel.', 'success');
+      appendLog('Demo approval recorded. A live workflow would apply a scoped action and write the outcome to Sentinel.', 'success');
       setPlaybooks((current) => current.map((playbook) => (
-        playbook.id === id ? { ...playbook, status: 'success', lastRun: 'Just now' } : playbook
+        playbook.id === id ? { ...playbook, status: 'simulated', lastRun: 'Simulated just now' } : playbook
       )));
     }, 2100);
   };
@@ -89,14 +98,19 @@ export default function SoarDashboard() {
 
   const actionTemplate = (rowData) => (
     <Button
-      icon={rowData.status === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-play'}
-      label={rowData.status === 'running' ? 'Executing' : 'Run'}
-      disabled={rowData.status === 'running'}
-      severity={rowData.status === 'success' ? 'success' : 'info'}
+      icon={rowData.status === 'approval' ? 'pi pi-spin pi-spinner' : 'pi pi-check-square'}
+      label={rowData.status === 'approval' ? 'Awaiting approval' : 'Simulate approval'}
+      disabled={rowData.status === 'approval'}
+      severity={rowData.status === 'simulated' ? 'success' : 'info'}
       size="small"
-      onClick={() => triggerPlaybook(rowData.id, rowData.name)}
+      onClick={() => simulateApproval(rowData.id, rowData.name)}
     />
   );
+
+  const stepStatusTemplate = (rowData) => {
+    const severity = rowData.status === 'required' ? 'warning' : rowData.status === 'repo-backed' ? 'success' : 'info';
+    return <Tag value={rowData.status} severity={severity} />;
+  };
 
   return (
     <div className="space-y-6">
@@ -106,11 +120,13 @@ export default function SoarDashboard() {
             <i className="pi pi-bolt text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Active Defense & SOAR</h1>
+            <h1 className="text-3xl font-bold tracking-tight">SOAR Response</h1>
             <p className="text-gray-400">
-              Serverless playbook orchestration panel for Azure Logic Apps, Entra ID, and network containment.
+              Logic App containment pattern with scope checks, approval, least-privilege identity, and demo-only execution logs.
             </p>
           </div>
+          <Tag value="Design walkthrough" severity="info" />
+          <Tag value="No autonomous containment claim" severity="danger" />
         </div>
       </section>
 
@@ -118,7 +134,7 @@ export default function SoarDashboard() {
         <Card className="border border-dark-700 bg-dark-900">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-400">Available Playbooks</div>
+              <div className="text-sm text-gray-400">Playbook Designs</div>
               <div className="mt-1 text-4xl font-bold">{playbooks.length}</div>
             </div>
             <i className="pi pi-sitemap text-3xl text-blue-300" />
@@ -127,58 +143,47 @@ export default function SoarDashboard() {
         <Card className="border border-dark-700 bg-dark-900">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-400">Executing Now</div>
-              <div className="mt-1 text-4xl font-bold text-yellow-300">{runningCount}</div>
+              <div className="text-sm text-gray-400">Pending Approval</div>
+              <div className="mt-1 text-4xl font-bold text-yellow-300">{approvalCount}</div>
             </div>
-            <i className="pi pi-spin pi-cog text-3xl text-yellow-300" />
+            <i className="pi pi-clock text-3xl text-yellow-300" />
           </div>
         </Card>
         <Card className="border border-dark-700 bg-dark-900">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-400">Contained Sessions</div>
-              <div className="mt-1 text-4xl font-bold text-emerald-300">{successCount}</div>
+              <div className="text-sm text-gray-400">Approved Simulations</div>
+              <div className="mt-1 text-4xl font-bold text-emerald-300">{simulatedCount}</div>
             </div>
-            <i className="pi pi-shield text-3xl text-emerald-300" />
+            <i className="pi pi-check-circle text-3xl text-emerald-300" />
           </div>
         </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card title="SOAR Playbook Control Plane" className="border border-dark-700 bg-dark-900 shadow-xl">
+        <Card title="SOAR Playbook Designs" className="border border-dark-700 bg-dark-900 shadow-xl">
           <DataTable value={playbooks} dataKey="id" responsiveLayout="scroll" size="small">
             <Column field="name" header="Playbook" sortable />
             <Column field="target" header="Target System" />
             <Column header="Severity" body={severityTemplate} sortable />
             <Column header="Status" body={statusTemplate} sortable />
-            <Column field="lastRun" header="Last Run" />
+            <Column field="lastRun" header="Evidence" />
             <Column header="Action" body={actionTemplate} />
           </DataTable>
 
           <Divider />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-dark-700 bg-dark-950 p-4">
-              <div className="mb-2 flex items-center gap-2 font-semibold">
-                <i className="pi pi-lock text-blue-300" />
-                Managed Identity
-              </div>
-              <p className="text-sm text-gray-400">Logic Apps use system-assigned identity and least-privilege RBAC for containment actions.</p>
-            </div>
-            <div className="rounded-lg border border-dark-700 bg-dark-950 p-4">
-              <div className="mb-2 flex items-center gap-2 font-semibold">
-                <i className="pi pi-cloud text-emerald-300" />
-                Azure Native Response
-              </div>
-              <p className="text-sm text-gray-400">Actions model token revocation, firewall deny rules, and Sentinel incident enrichment.</p>
-            </div>
-          </div>
+          <DataTable value={workflowSteps} size="small">
+            <Column field="step" header="Workflow Step" className="font-semibold text-blue-200" />
+            <Column header="Status" body={stepStatusTemplate} />
+            <Column field="detail" header="What happens" />
+          </DataTable>
         </Card>
 
-        <Card title="SOAR Execution Logs" className="border border-dark-700 bg-dark-900 shadow-xl">
+        <Card title="Approval Simulation Logs" className="border border-dark-700 bg-dark-900 shadow-xl">
           <div className="mb-4 rounded-lg border border-dark-700 bg-black p-4 font-mono text-sm">
             {logs.length === 0 ? (
-              <div className="text-gray-600">Waiting for playbook execution...</div>
+              <div className="text-gray-600">Waiting for approval simulation...</div>
             ) : (
               <Timeline
                 value={logs}
@@ -204,7 +209,10 @@ export default function SoarDashboard() {
               />
             )}
           </div>
-          <ProgressBar value={successCount ? Math.round((successCount / playbooks.length) * 100) : 0} />
+          <ProgressBar value={simulatedCount ? Math.round((simulatedCount / playbooks.length) * 100) : 0} />
+          <div className="mt-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-100">
+            Live containment evidence is intentionally not claimed until sanitized Logic App run history is captured.
+          </div>
         </Card>
       </div>
     </div>

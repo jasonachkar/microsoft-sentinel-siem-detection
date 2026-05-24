@@ -3,63 +3,62 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, ArrowRight, ArrowLeft, X } from 'lucide-react';
 
-// A lightweight, navigation-driven product tour. Each step routes the app to the
-// view it describes so visitors *see* the real screen, with a "why it matters"
-// note framing the cloud-security competency on display.
+// Navigation-driven portfolio tour. Each step explains what is repo-backed,
+// what is demo-only, and why it matters to a cloud security reviewer.
 const STEPS = [
   {
     route: '/',
-    title: 'Welcome to SentinelOS',
-    body: 'A multi-cloud Microsoft Sentinel detection & response platform: Infrastructure-as-Code, Detection-as-Code, an enforced DevSecOps pipeline, and an AI-assisted SOC — all in one console.',
+    title: 'Welcome to the Sentinel Detection Lab',
+    body: 'A Microsoft Sentinel cloud security detection engineering lab: repo-backed KQL rules, Terraform modules, CI/CD gates, drift detection, and clearly labelled demo telemetry.',
     why: 'Takes about 60 seconds. You can reopen this tour anytime from the header.',
   },
   {
     route: '/architecture',
     title: 'Reference Architecture',
-    body: 'Telemetry flows from Entra ID, Microsoft 365, Defender, Kubernetes and AWS CloudTrail into Sentinel, then out to AI triage and SOAR containment.',
-    why: 'Shows end-to-end detection & response design — not just isolated controls.',
+    body: 'Review the intended flow from Entra ID, Microsoft 365, Defender, Kubernetes, and AWS CloudTrail into Sentinel, then to triage and SOAR response design.',
+    why: 'Shows end-to-end detection and response thinking without claiming a production SOC.',
   },
   {
     route: '/iac',
     title: 'Infrastructure as Code',
-    body: 'Every module is real Terraform rendered straight from the repo — KMS-encrypted CloudTrail, least-privilege RBAC, OIDC cross-cloud trust.',
-    why: 'Cloud security is IaC-first: misconfiguration prevention and secrets hygiene baked into provisioning.',
+    body: 'Every module is real Terraform rendered from the repo: Sentinel core, AWS CloudTrail connector, SOAR shell, policy guardrails, and lab honeypot infrastructure.',
+    why: 'Cloud security is IaC-first: misconfiguration prevention and secrets hygiene belong in provisioning.',
   },
   {
     route: '/appsec',
-    title: 'AppSec & Supply Chain',
-    body: 'Shift-left results from Gitleaks, TFSec and Trivy. The CI gate fails the build on HIGH/CRITICAL findings.',
-    why: 'Supply-chain security and policy-as-code enforcement in CI/CD.',
+    title: 'CI/CD Security',
+    body: 'Gitleaks, TFSec, Trivy, validation, and bundling are represented through the GitHub Actions workflow.',
+    why: 'Supply-chain security and policy checks are part of a credible cloud security pipeline.',
   },
   {
     route: '/drift',
     title: 'IaC Drift & Pipeline',
-    body: 'A nightly terraform plan catches out-of-band "ClickOps" changes and opens an incident. Watch the Go CLI ship detections to Sentinel via OIDC.',
+    body: 'A nightly terraform plan workflow is designed to catch out-of-band "ClickOps" changes and open a tracked issue. The Go CLI shows the Sentinel rule deployment path.',
     why: 'Configuration drift and least-privilege deployment automation are core cloud-security concerns.',
   },
   {
     route: '/compliance',
-    title: 'Compliance & Controls',
-    body: 'CIS Azure Foundations and NIST CSF coverage mapped to the controls actually implemented here, with before→after remediation evidence.',
-    why: 'Compliance enforcement and audit-ready evidence are exactly what hiring managers probe for.',
+    title: 'Controls Mapping',
+    body: 'Cloud security controls are mapped to repo artifacts as lab evidence, not certification or audit reporting.',
+    why: 'A reviewer can see governance thinking while the UI stays honest about scope.',
   },
   {
     route: '/rules',
     title: 'Detection Rules',
-    body: '16 MITRE ATT&CK-mapped KQL detections, managed as code and validated in the pipeline.',
-    why: 'Detection engineering with explicit tuning and false-positive awareness.',
+    body: '16 MITRE ATT&CK-mapped KQL detections are managed as code and validated in the pipeline.',
+    why: 'Detection engineering should include tuning, false-positive awareness, and reviewable metadata.',
   },
   {
     route: '/simulator',
-    title: 'Attack Simulator',
-    body: 'Launch a simulated attack and watch the matching detections fire in real time.',
-    why: 'Validation: prove detections work before trusting them (Detection-as-Code assertion).',
+    title: 'Attack Visualizer',
+    body: 'Launch a simulated attack scenario and inspect the expected telemetry and detection workflow.',
+    why: 'Validation matters, but this lab separates local simulation from live Sentinel assertion.',
   },
   {
     route: '/tutorial',
     title: 'Learning Paths',
     body: 'Guided, role-based paths for SOC analysts, detection engineers, and cloud security engineers.',
-    why: 'Explore deeper at your own pace. Thanks for visiting!',
+    why: 'Explore deeper at your own pace. The lab is built to be reviewed, questioned, and improved.',
   },
 ];
 
@@ -78,7 +77,7 @@ export default function WelcomeTour({ run, onClose }) {
 
   if (!run) return null;
 
-  const s = STEPS[step];
+  const current = STEPS[step];
   const isFirst = step === 0;
   const isLast = step === STEPS.length - 1;
 
@@ -114,12 +113,12 @@ export default function WelcomeTour({ run, onClose }) {
           </button>
         </div>
 
-        <h3 className="text-lg font-bold text-gray-100">{s.title}</h3>
-        <p className="mt-1 text-sm text-gray-400">{s.body}</p>
+        <h3 className="text-lg font-bold text-gray-100">{current.title}</h3>
+        <p className="mt-1 text-sm text-gray-400">{current.body}</p>
 
         <div className="mt-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-blue-200">
           <span className="font-semibold text-blue-300">Why it matters: </span>
-          {s.why}
+          {current.why}
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-1.5">
@@ -143,7 +142,7 @@ export default function WelcomeTour({ run, onClose }) {
             {!isFirst && (
               <button
                 type="button"
-                onClick={() => setStep((p) => Math.max(0, p - 1))}
+                onClick={() => setStep((previous) => Math.max(0, previous - 1))}
                 className="flex items-center gap-1 rounded-lg border border-dark-600 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-white/5"
               >
                 <ArrowLeft size={14} /> Back
@@ -151,7 +150,7 @@ export default function WelcomeTour({ run, onClose }) {
             )}
             <button
               type="button"
-              onClick={() => (isLast ? onClose() : setStep((p) => Math.min(STEPS.length - 1, p + 1)))}
+              onClick={() => (isLast ? onClose() : setStep((previous) => Math.min(STEPS.length - 1, previous + 1)))}
               className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-500"
             >
               {isLast ? 'Finish' : 'Next'}

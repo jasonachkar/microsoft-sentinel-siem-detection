@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow historical non-secret demo credential strings used in attack simulation examples."
+regexes = [
+  '''password=CompromisedPass123''',
+  '''CompromisedPass123''',
+  '''Str0ngP@ss!''',
+  '''P@ssw0rd123!''',
+  '''Spring2024!''',
+  '''Welcome1!''',
+  '''Password123'''
+]

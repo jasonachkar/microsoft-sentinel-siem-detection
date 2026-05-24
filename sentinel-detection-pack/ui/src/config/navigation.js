@@ -2,54 +2,76 @@
 // and the command palette so they never drift apart.
 export const navSections = [
   {
-    section: 'Executive View',
+    section: 'Start Here',
     items: [
-      { path: '/', icon: 'pi-globe', label: 'Command Center', keywords: 'home overview dashboard' },
+      { path: '/', icon: 'pi-compass', label: 'Start Here', keywords: 'home overview reviewer mission proof path' },
+    ],
+  },
+  {
+    section: 'Architecture',
+    items: [
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
-      { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps', keywords: 'cost ingestion savings' },
-      { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture', keywords: 'azure findings' },
-    ],
-  },
-  {
-    section: 'Governance',
-    items: [
-      { path: '/compliance', icon: 'pi-check-square', label: 'Compliance & Controls', keywords: 'cis nist csf benchmark audit controls' },
-      { path: '/decisions', icon: 'pi-book', label: 'Architecture Decisions', keywords: 'adr rationale why trade-off design' },
-    ],
-  },
-  {
-    section: 'Active Defense',
-    items: [
-      { path: '/incidents', icon: 'pi-shield', label: 'Live Incidents', keywords: 'alerts queue triage' },
-      { path: '/kubernetes', icon: 'pi-box', label: 'K8s Telemetry', keywords: 'kubernetes aks eks container' },
-      { path: '/copilot', icon: 'pi-bolt', label: 'AI Copilot', keywords: 'genai assistant triage' },
-      { path: '/soar', icon: 'pi-sitemap', label: 'SOAR Playbooks', keywords: 'logic app automation remediation' },
-    ],
-  },
-  {
-    section: 'DevSecOps',
-    items: [
-      { path: '/appsec', icon: 'pi-verified', label: 'AppSec & Supply Chain', keywords: 'trivy tfsec gitleaks cve scan' },
-      { path: '/drift', icon: 'pi-sync', label: 'IaC Drift & Pipeline', keywords: 'terraform drift ci cd deploy' },
       { path: '/iac', icon: 'pi-server', label: 'Infrastructure as Code', keywords: 'terraform source code modules' },
     ],
   },
   {
-    section: 'Engineering',
+    section: 'Detection Engineering',
     items: [
       { path: '/rules', icon: 'pi-list', label: 'Detection Rules', keywords: 'kql detections catalog' },
       { path: '/detection-engineering', icon: 'pi-search-plus', label: 'Detection Deep-Dive', keywords: 'tuning false positive logic password spray' },
-      { path: '/kql', icon: 'pi-database', label: 'KQL Playground', keywords: 'kusto query hunt' },
+      { path: '/scenario/password-spray', icon: 'pi-lock', label: 'Password Spray Scenario', keywords: 'entra id password spray scenario investigation' },
       { path: '/mitre', icon: 'pi-th-large', label: 'MITRE ATT&CK', keywords: 'tactics techniques coverage navigator' },
-      { path: '/simulator', icon: 'pi-exclamation-triangle', label: 'Attack Simulator', keywords: 'simulate adversary emulation' },
-      { path: '/investigation', icon: 'pi-share-alt', label: 'Investigation', keywords: 'graph entities workbench' },
-      { path: '/threat-map', icon: 'pi-map', label: 'Threat Map', keywords: 'global ioc intel' },
     ],
   },
   {
-    section: 'Learn',
+    section: 'Cloud Security Controls',
     items: [
+      { path: '/cloud-security-controls', icon: 'pi-shield', label: 'Cloud Security Controls', keywords: 'azure policy defender oidc logging cost governance' },
+      { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps', keywords: 'cost ingestion savings' },
+      { path: '/compliance', icon: 'pi-check-square', label: 'Controls Mapping', keywords: 'cis nist csf benchmark audit controls lab' },
+      { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture Demo', keywords: 'azure findings demo resource graph demo' },
+    ],
+  },
+  {
+    section: 'CI/CD & Drift',
+    items: [
+      { path: '/appsec', icon: 'pi-verified', label: 'CI/CD Security', keywords: 'trivy tfsec gitleaks cve scan supply chain' },
+      { path: '/drift', icon: 'pi-sync', label: 'CI/CD & Drift', keywords: 'terraform drift ci cd deploy demo pipeline' },
+    ],
+  },
+  {
+    section: 'SOAR Response',
+    items: [
+      { path: '/soar', icon: 'pi-sitemap', label: 'SOAR Response', keywords: 'logic app automation remediation human approval' },
+    ],
+  },
+  {
+    section: 'Evidence',
+    items: [
+      { path: '/evidence', icon: 'pi-folder-open', label: 'Evidence', keywords: 'proof files screenshots real simulated limitations' },
+    ],
+  },
+  {
+    section: 'Interview Prep',
+    items: [
+      { path: '/interview', icon: 'pi-comments', label: 'Interview Prep', keywords: 'hiring manager skills questions resume claims' },
+      { path: '/decisions', icon: 'pi-book', label: 'Architecture Decisions', keywords: 'adr rationale why trade-off design' },
+    ],
+  },
+  {
+    section: 'Lab Sandbox',
+    items: [
+      { path: '/threat-map', icon: 'pi-map', label: 'Demo Threat Map', keywords: 'global ioc intel demo' },
+      { path: '/incidents', icon: 'pi-shield', label: 'Demo Incidents', keywords: 'alerts queue triage simulated' },
+      { path: '/live-incidents', icon: 'pi-bolt', label: 'Demo Live Incidents', keywords: 'live incidents demo api' },
+      { path: '/investigation', icon: 'pi-share-alt', label: 'Demo Investigation', keywords: 'graph entities workbench demo' },
+      { path: '/kql', icon: 'pi-database', label: 'KQL Demo Playground', keywords: 'kusto query hunt sample demo' },
+      { path: '/metrics', icon: 'pi-chart-bar', label: 'Demo Metrics', keywords: 'metrics dashboard demo' },
+      { path: '/simulator', icon: 'pi-exclamation-triangle', label: 'Attack Visualizer Demo', keywords: 'simulate adversary emulation demo' },
+      { path: '/copilot', icon: 'pi-bolt', label: 'Copilot Concept Demo', keywords: 'genai assistant triage demo concept' },
+      { path: '/kubernetes', icon: 'pi-box', label: 'Demo K8s Telemetry', keywords: 'kubernetes aks eks container demo' },
       { path: '/tutorial', icon: 'pi-compass', label: 'Learning Paths', keywords: 'tutorial guide onboarding' },
+      { path: '/command-center', icon: 'pi-desktop', label: 'Lab Dashboard Demo', keywords: 'command center summary dashboard demo' },
     ],
   },
 ];

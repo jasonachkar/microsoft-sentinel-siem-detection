@@ -24,7 +24,7 @@ const TUTORIALS = {
     color: 'cyber',
     cert: 'Aligns with SC-200',
     steps: [
-      { id: 1, title: 'Read the Command Center', description: 'Start with the single pane of glass: live posture, AppSec gate status, and threat intel.', link: '/', action: 'Open Command Center', tip: 'Everything an on-call analyst needs at a glance.', why: 'Situational awareness is the first move of any shift.' },
+      { id: 1, title: 'Start Here', description: 'Start with the lab overview: repo-backed architecture, CI/CD gate status, and clearly labelled demo evidence.', link: '/', action: 'Open Start Here', tip: 'This is a portfolio review flow, not a production SOC queue.', why: 'Situational awareness starts with knowing what evidence is real and what is simulated.' },
       { id: 2, title: 'Triage Incidents', description: 'Work the incident queue, sorted by severity and SLA.', link: '/incidents', action: 'View Incidents', why: 'Prioritization under SLA pressure is the core SOC skill.' },
       { id: 3, title: 'Investigate the Entity Graph', description: 'Pivot across users, IPs, devices and processes to scope the blast radius.', link: '/investigation', action: 'Open Investigation', why: 'Scoping determines whether one box or the whole tenant is compromised.' },
       { id: 4, title: 'Hunt with KQL', description: 'Query telemetry for additional indicators of compromise.', link: '/kql', action: 'Open KQL Playground', why: 'KQL fluency separates button-clickers from real analysts.' },
@@ -39,10 +39,10 @@ const TUTORIALS = {
     color: 'purple',
     cert: 'Aligns with SC-200',
     steps: [
-      { id: 1, title: 'Study the Rule Catalog', description: 'Examine 16 production KQL detections, their normalization, thresholds and FP handling.', link: '/rules', action: 'Browse Rules', why: 'Good detections are explicit about noise, not just signal.' },
+      { id: 1, title: 'Study the Rule Catalog', description: 'Examine 16 lab KQL detections, their normalization, thresholds and false-positive handling.', link: '/rules', action: 'Browse Rules', why: 'Good detections are explicit about noise, not just signal.' },
       { id: 2, title: 'Map to MITRE ATT&CK', description: 'See tactic/technique coverage and the gaps.', link: '/mitre', action: 'View Coverage', why: 'Coverage-driven engineering beats ad-hoc rule writing.' },
-      { id: 3, title: 'Prototype in KQL', description: 'Write and test queries against sample tables.', link: '/kql', action: 'Write Queries', why: 'Iterate on logic before it ever reaches production.' },
-      { id: 4, title: 'Validate with Simulation', description: 'Run an attack and confirm the detection fires (Detection-as-Code assertion).', link: '/simulator', action: 'Test Detections', why: 'Untested detections are hope, not engineering.' },
+      { id: 3, title: 'Prototype in KQL', description: 'Write and test queries against sample tables.', link: '/kql', action: 'Write Queries', why: 'Iterate on logic before deployment.' },
+      { id: 4, title: 'Validate with Simulation', description: 'Run a demo attack scenario and review the expected detection path.', link: '/simulator', action: 'Review Scenario', why: 'The lab separates local simulation from optional live Sentinel assertion.' },
       { id: 5, title: 'Ship via Pipeline', description: 'Watch the Go CLI deploy rules to Sentinel through the CI/CD gate.', link: '/drift', action: 'See the Pipeline', why: 'Detections belong in version control and CI, like any code.' },
     ],
   },
@@ -55,11 +55,11 @@ const TUTORIALS = {
     cert: 'Aligns with AZ-500',
     steps: [
       { id: 1, title: 'Understand the Architecture', description: 'Trace telemetry from Entra ID, M365, Defender, Kubernetes and AWS into Sentinel and out to containment.', link: '/architecture', action: 'View Architecture', why: 'Design fluency is what a cloud security lead probes first.' },
-      { id: 2, title: 'Read the Real IaC', description: 'KMS-encrypted CloudTrail, public-access blocks, least-privilege RBAC, OIDC trust — all live Terraform.', link: '/iac', action: 'Explore IaC', why: 'Misconfiguration prevention and secrets hygiene start at provisioning.' },
+      { id: 2, title: 'Read the IaC', description: 'KMS-encrypted CloudTrail, public-access blocks, least-privilege RBAC, and OIDC trust are represented as repo-backed Terraform.', link: '/iac', action: 'Explore IaC', why: 'Misconfiguration prevention and secrets hygiene start at provisioning.' },
       { id: 3, title: 'Enforce Shift-Left AppSec', description: 'Gitleaks, TFSec and Trivy gate the build on HIGH/CRITICAL findings.', link: '/appsec', action: 'View AppSec', why: 'Policy-as-code in CI is how cloud teams scale security.' },
       { id: 4, title: 'Catch Configuration Drift', description: 'A nightly terraform plan detects out-of-band changes and opens an incident.', link: '/drift', action: 'View Drift', why: '"ClickOps" drift is one of the top cloud-breach root causes.' },
       { id: 5, title: 'Optimize Cost (FinOps)', description: 'Model SIEM ingestion cost and hot/cold tiering trade-offs.', link: '/finops', action: 'Open FinOps', why: 'Security that ignores spend does not survive a budget review.' },
-      { id: 6, title: 'Map to Compliance', description: 'See CIS Azure and NIST CSF controls mapped to the real implementation, with remediation evidence.', link: '/compliance', action: 'Open Compliance', why: 'Audit-ready control mapping is what turns "I built it" into "I can prove it".' },
+      { id: 6, title: 'Map Controls', description: 'See cloud security controls mapped to repo artifacts as lab evidence.', link: '/compliance', action: 'Open Controls Mapping', why: 'Control mapping shows security reasoning without claiming certification.' },
     ],
   },
   attacker: {
@@ -74,7 +74,7 @@ const TUTORIALS = {
       { id: 2, title: 'Find Coverage Gaps', description: 'Use the MITRE matrix to spot blind spots.', link: '/mitre', action: 'Open MITRE', why: 'Gaps are where real adversaries operate.' },
       { id: 3, title: 'Run a Simulation', description: 'Emulate an attack and watch the telemetry it generates.', link: '/simulator', action: 'Open Simulator', why: 'Understanding telemetry is half of evasion and half of detection.' },
       { id: 4, title: 'Study Detection Logic', description: 'Read the KQL to understand triggering patterns.', link: '/kql', action: 'Analyze Queries', why: 'The logic reveals both strengths and bypasses.' },
-      { id: 5, title: 'Review Threat Intel', description: 'See global IOCs and attack patterns.', link: '/threat-map', action: 'View Threat Map', why: 'Intel-informed emulation mirrors real campaigns.' },
+      { id: 5, title: 'Review Demo Threat Intel', description: 'See representative IOCs and attack patterns.', link: '/threat-map', action: 'View Threat Map', why: 'Intel-informed emulation mirrors realistic campaigns while staying clearly labelled.' },
     ],
   },
 };
@@ -184,7 +184,7 @@ export default function Tutorial() {
           Learning Paths
         </h1>
         <p className="mt-1 text-gray-400">
-          Role-based, hands-on tours of the platform — each step links to a live view and explains the cloud-security skill it demonstrates.
+          Role-based tours of the lab. Each step links to a page and explains the cloud-security skill it demonstrates.
         </p>
       </div>
 

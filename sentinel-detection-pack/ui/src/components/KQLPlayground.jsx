@@ -256,6 +256,9 @@ export default function KQLPlayground() {
           <p className="text-gray-400 mt-1">
             Write and test Kusto Query Language queries against sample data
           </p>
+          <span className="mt-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+            Local demo playground
+          </span>
         </div>
 
         <div className="flex items-center gap-3">

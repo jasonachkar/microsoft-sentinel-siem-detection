@@ -209,7 +209,7 @@ export default function ThreatMap() {
       setConnectionStatus(data.isRealData ? 'connected' : 'disconnected');
       
       if (data.error && !data.isRealData) {
-        setError('Could not fetch live data. Showing demo data.');
+        setError('Could not fetch public threat feed data. Showing demo data.');
       }
     } catch (error) {
       console.error('Failed to fetch threat data:', error);
@@ -243,16 +243,19 @@ export default function ThreatMap() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
             <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-500" />
-            Global Threat Map
+            Demo Threat Intel Map
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
-            Real-time threat intelligence
+            Demo threat intel visualization with optional public feed data
             {threatData?.isRealData && (
               <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                <Wifi className="w-3 h-3" /> LIVE DATA
+                <Wifi className="w-3 h-3" /> PUBLIC FEED DATA
               </span>
             )}
           </p>
+          <span className="mt-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+            Demo/API-dependent
+          </span>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

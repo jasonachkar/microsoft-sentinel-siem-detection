@@ -112,7 +112,7 @@ export default function Metrics() {
   const { liveEvents, incidents } = useAppStore();
   const rules = rulesData.rules || [];
 
-  // Calculate real-time metrics
+  // Calculate sample metrics from local/demo events.
   const metrics = useMemo(() => {
     const alertsLast24h = liveEvents.filter(e => {
       const time = new Date(e.timestamp);
@@ -143,8 +143,11 @@ export default function Metrics() {
             Security Metrics
           </h1>
           <p className="text-gray-400 mt-1">
-            Performance analytics and operational insights
+            Sample SOC metrics and operational analytics for reviewer discussion
           </p>
+          <span className="mt-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+            Sample metrics
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -347,7 +350,7 @@ export default function Metrics() {
               <p className="text-sm text-gray-400">Active Rules</p>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Production-ready detection coverage</p>
+          <p className="text-xs text-gray-500">Portfolio lab detection coverage</p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 rounded-xl border border-purple-700/50 p-6">
@@ -358,7 +361,7 @@ export default function Metrics() {
               <p className="text-sm text-gray-400">MITRE Tactics</p>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Full enterprise framework coverage</p>
+          <p className="text-xs text-gray-500">MITRE framework coverage view</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 rounded-xl border border-orange-700/50 p-6">

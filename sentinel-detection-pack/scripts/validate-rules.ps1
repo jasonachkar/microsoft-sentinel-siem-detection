@@ -31,7 +31,8 @@ foreach ($kql in $kqlFiles) {
   }
 
   foreach ($field in $requiredKqlFields) {
-    if (-not (Select-String -Path $kql.FullName -Pattern "^$field:" -SimpleMatch)) {
+    $pattern = "^$([regex]::Escape($field)):"
+    if (-not (Select-String -Path $kql.FullName -Pattern $pattern)) {
       Write-Host "Missing $field in $($kql.FullName)"
       $failed = $true
     }
@@ -60,7 +61,8 @@ foreach ($kql in $kqlFiles) {
   }
 
   foreach ($field in $requiredYamlFields) {
-    if (-not (Select-String -Path $yamlPath -Pattern "^$field:" -SimpleMatch)) {
+    $pattern = "^$([regex]::Escape($field)):"
+    if (-not (Select-String -Path $yamlPath -Pattern $pattern)) {
       Write-Host "Missing $field in $yamlPath"
       $failed = $true
     }
@@ -74,9 +76,14 @@ foreach ($kql in $kqlFiles) {
   }
 }
 
-# Hygiene checks
-$allFiles = Get-ChildItem -Path $RootDir -Recurse -File
-$secretScanFiles = $allFiles | Where-Object { $_.FullName -notmatch "\\\\scripts\\\\" }
+# Hygiene checks scoped to detection content, not generated UI dependencies.
+$contentPaths = @(
+  (Join-Path $RootDir "rules"),
+  (Join-Path $RootDir "rules-yaml"),
+  (Join-Path $RootDir "sample-data")
+) | Where-Object { Test-Path $_ }
+$allFiles = foreach ($path in $contentPaths) { Get-ChildItem -Path $path -Recurse -File }
+$secretScanFiles = $allFiles
 if ($allFiles | Select-String -Pattern "\t" -AllMatches) {
   Write-Host "Tabs found in repository"
   $failed = $true
@@ -106,6 +113,8 @@ if ($CheckSamples) {
     "CommonSecurityLog" = @("TimeGenerated", "SourceIP", "DestinationIP")
     "AzureDiagnostics" = @("TimeGenerated", "ResourceProvider", "OperationName", "ResourceId")
     "AzureActivity" = @("TimeGenerated", "OperationNameValue", "Caller", "ActivityStatusValue")
+    "AKSAuditAdmin" = @("TimeGenerated", "Category", "Log")
+    "CloudTrail" = @("eventTime", "eventSource", "eventName", "userIdentity", "sourceIPAddress")
   }
 
   $sampleFiles = Get-ChildItem -Path (Join-Path $RootDir "sample-data") -Filter "*.jsonl" | Where-Object { $_.Name -notlike "._*" }
@@ -138,7 +147,7 @@ if ($CheckSamples) {
         }
       }
       if ($missing.Count -gt 0) {
-        $errors += "$($file.FullName):$($i+1) missing fields for $table: $($missing -join ', ')"
+        $errors += "$($file.FullName):$($i+1) missing fields for ${table}: $($missing -join ', ')"
       }
     }
   }
