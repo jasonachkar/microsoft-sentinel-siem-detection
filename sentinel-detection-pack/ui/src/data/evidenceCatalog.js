@@ -66,6 +66,17 @@ export const evidenceCatalog = [
     limitations: ['Needs real account IDs, external ID, and workspace configuration before use.'],
   },
   {
+    id: 'azure-policy-controls',
+    title: 'Azure Policy posture controls',
+    status: 'real-iac',
+    confidence: 'verified',
+    repoPaths: ['terraform-policy/main.tf', 'docs/cloud-security-controls.md'],
+    summary: 'Custom deny/audit policies for storage exposure, public IPs, TLS, tags, diagnostics review, and VM encryption.',
+    cloudSecuritySkill: 'Cloud governance and preventative security controls with Terraform.',
+    interviewTalkingPoint: 'The project connects detection engineering to prevention and governance, not only alerting.',
+    limitations: ['Policy assignments require subscription scope and tenant-specific rollout testing.'],
+  },
+  {
     id: 'soar-containment-design',
     title: 'SOAR containment design',
     status: 'planned',

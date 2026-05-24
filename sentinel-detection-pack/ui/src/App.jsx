@@ -19,6 +19,7 @@ import SoarDashboard from './components/SoarDashboard';
 import AICopilot from './components/AICopilot';
 import FinOpsDashboard from './components/FinOpsDashboard';
 import InfrastructurePosture from './components/InfrastructurePosture';
+import CloudSecurityControls from './components/CloudSecurityControls';
 import LivePostureDashboard from './components/LivePostureDashboard';
 import KubernetesDashboard from './components/KubernetesDashboard';
 import LiveIncidentsDashboard from './components/LiveIncidentsDashboard';
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="/copilot" element={<AICopilot />} />
             <Route path="/ai-copilot" element={<AICopilot />} />
             <Route path="/finops" element={<FinOpsDashboard />} />
+            <Route path="/cloud-security-controls" element={<CloudSecurityControls />} />
             <Route path="/appsec" element={<AppSecDashboard />} />
             <Route path="/drift" element={<TerraformDrift />} />
             <Route path="/iac" element={<IaCExplorer />} />
