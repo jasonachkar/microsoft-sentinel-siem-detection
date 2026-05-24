@@ -1,6 +1,6 @@
 # UI Evidence Screenshots
 
-Generated: 2026-05-24T19:30:55.402Z
+Generated: 2026-05-24T20:04:39.851Z
 
 These are **automated UI reviewer evidence** captures from the portfolio React app.
 They are **not** Azure tenant or Sentinel portal screenshots.

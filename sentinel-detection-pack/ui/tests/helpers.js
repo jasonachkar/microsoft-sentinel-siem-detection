@@ -42,6 +42,28 @@ export async function assertPageHasText(page, ...phrases) {
   }
 }
 
+export async function assertNoHorizontalOverflow(page) {
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+  expect(overflow, 'Page should not scroll horizontally').toBe(false);
+}
+
+export async function assertMainContentVisible(page, minWidth = 200) {
+  await expect(page.locator('main')).toBeVisible();
+  const box = await page.locator('main').boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.width).toBeGreaterThan(minWidth);
+  expect(box.x).toBeGreaterThanOrEqual(0);
+}
+
+export async function openMobileNav(page) {
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await expect(page.locator('aside').getByRole('link').first()).toBeVisible();
+}
+
+export function sidebarLink(page, label) {
+  return page.locator('aside').getByRole('link', { name: new RegExp(label, 'i') });
+}
+
 /**
  * Detect forbidden positive claims while allowing safe negations.
  * Returns list of { phrase, snippet } violations.
