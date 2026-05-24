@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import ReviewerMode from './components/ReviewerMode';
+import EvidenceCenter from './components/EvidenceCenter';
 import CommandCenter from './components/CommandCenter';
 import Dashboard from './components/Dashboard';
 import ThreatMap from './components/ThreatMap';
@@ -46,6 +47,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<ReviewerMode />} />
             <Route path="/reviewer" element={<ReviewerMode />} />
+            <Route path="/evidence" element={<EvidenceCenter />} />
             <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/threat-map" element={<ThreatMap />} />

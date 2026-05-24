@@ -5,6 +5,7 @@ export const navSections = [
     section: 'Executive View',
     items: [
       { path: '/', icon: 'pi-globe', label: 'Reviewer Mode', keywords: 'home overview dashboard reviewer lab evidence' },
+      { path: '/evidence', icon: 'pi-folder-open', label: 'Evidence Center', keywords: 'proof files screenshots real simulated limitations' },
       { path: '/command-center', icon: 'pi-desktop', label: 'Lab Dashboard', keywords: 'command center summary dashboard' },
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
       { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps', keywords: 'cost ingestion savings' },
