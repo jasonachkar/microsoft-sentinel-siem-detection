@@ -9,6 +9,8 @@ Live demo: https://sentinel-detection-pack.vercel.app
 
 This repository is a private lab and portfolio-grade implementation. It is designed to show how cloud security detections, infrastructure, validation, and reviewer evidence can be organized around Microsoft Sentinel. It is not presented as a production SOC platform.
 
+The documentation is Microsoft Sentinel / Defender portal-aware. Microsoft Learn states that Sentinel is generally available in the Defender portal and that Azure portal support for Sentinel ends after March 31, 2027.
+
 ## What This Project Proves
 
 - Microsoft Sentinel Detection-as-Code using KQL and YAML rule definitions.

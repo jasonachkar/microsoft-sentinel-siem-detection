@@ -64,6 +64,14 @@ const posturePillars = [
   { title: 'Cost', icon: 'pi pi-dollar', detail: 'Lab mode, retention, teardown, and ingestion routing are explicit.' },
 ];
 
+const defenderMapping = [
+  { task: 'Incidents', location: 'Unified incident queue / Investigation and response' },
+  { task: 'Advanced hunting', location: 'Investigation and response > Hunting' },
+  { task: 'Analytics rules', location: 'Microsoft Sentinel > Configuration > Analytics' },
+  { task: 'Automation', location: 'Microsoft Sentinel > Configuration > Automation' },
+  { task: 'Content hub', location: 'Microsoft Sentinel > Content management > Content hub' },
+];
+
 function RepoPath({ path }) {
   return (
     <a
@@ -165,6 +173,20 @@ export default function CloudSecurityControls() {
           </div>
         </Card>
       </div>
+
+      <Card title="Defender Portal Readiness" className="border border-dark-700 bg-dark-900">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-3xl text-sm text-gray-400">
+            Microsoft Sentinel is generally available in the Microsoft Defender portal, and Microsoft states that Azure portal support
+            for Sentinel ends after March 31, 2027. This lab is written as Sentinel / Defender portal-aware rather than Azure-portal-only.
+          </p>
+          <RepoPath path="docs/defender-portal-transition.md" />
+        </div>
+        <DataTable value={defenderMapping} className="p-datatable-sm">
+          <Column field="task" header="Reviewer Task" className="font-semibold text-blue-200" />
+          <Column field="location" header="Defender Portal Mapping" />
+        </DataTable>
+      </Card>
     </div>
   );
 }

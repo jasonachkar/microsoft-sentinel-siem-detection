@@ -77,6 +77,17 @@ export const evidenceCatalog = [
     limitations: ['Policy assignments require subscription scope and tenant-specific rollout testing.'],
   },
   {
+    id: 'defender-portal-readiness',
+    title: 'Defender portal readiness',
+    status: 'real-code',
+    confidence: 'verified',
+    repoPaths: ['docs/defender-portal-transition.md', 'sentinel-detection-pack/ui/src/components/CloudSecurityControls.jsx'],
+    summary: 'Documentation and UI mapping for Sentinel workflows in the Microsoft Defender portal transition.',
+    cloudSecuritySkill: 'Operational awareness of Microsoft Sentinel direction and unified security operations.',
+    interviewTalkingPoint: 'I know Sentinel operations are moving toward Defender portal, so the lab avoids Azure-portal-only assumptions.',
+    limitations: ['Tenant screenshots may differ depending on portal transition state and licensing.'],
+  },
+  {
     id: 'soar-containment-design',
     title: 'SOAR containment design',
     status: 'planned',
