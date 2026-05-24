@@ -48,11 +48,18 @@ const CAPTURES = [
     proves: 'Repo-backed proof inventory separating real code, demo data, and limitations.',
   },
   {
-    route: '/interview',
-    file: 'interview-prep.png',
+    route: '/cloud-security-controls',
+    file: 'cloud-security-controls.png',
     viewport: DESKTOP,
-    waitFor: 'Interview Prep',
-    proves: 'Skills matrix, hard questions, and safe claims for hiring conversations.',
+    waitFor: 'Cloud Security',
+    proves: 'Cloud security control coverage: identity, logging, governance, and cost awareness.',
+  },
+  {
+    route: '/drift',
+    file: 'ci-cd-drift.png',
+    viewport: DESKTOP,
+    waitFor: 'Drift',
+    proves: 'DevSecOps: IaC drift detection, CI/CD security gate, and deploy automation (demo data).',
   },
   {
     route: '/',
