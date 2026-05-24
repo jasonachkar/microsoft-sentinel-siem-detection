@@ -113,9 +113,9 @@ export default function CommandCenter() {
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="font-bold text-gray-100"><i className="pi pi-microsoft mr-2 text-blue-300" />Azure Core</h3>
-                    <Tag severity="success" value="Online" />
+                    <Tag severity="success" value="Repo-backed" />
                   </div>
-                  <p className="text-xs text-gray-400">Terraform State: Synced</p>
+                  <p className="text-xs text-gray-400">Terraform module: present</p>
                   <p className="text-xs text-gray-400">Sentinel connector patterns: documented</p>
                 </div>
                 <div className="mt-4 rounded bg-dark-900 p-2 font-mono text-xs text-gray-500">
@@ -127,10 +127,10 @@ export default function CommandCenter() {
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="font-bold text-gray-100"><i className="pi pi-amazon mr-2 text-orange-300" />AWS Integration</h3>
-                    <Tag severity="success" value="OIDC Trusted" />
+                    <Tag severity="info" value="Trust model" />
                   </div>
-                  <p className="text-xs text-gray-400">CloudTrail S3 Bucket: Active</p>
-                  <p className="text-xs text-gray-400">AssumeRole IAM: Configured</p>
+                  <p className="text-xs text-gray-400">CloudTrail module: repo-backed</p>
+                  <p className="text-xs text-gray-400">AssumeRole IAM: defined as IaC</p>
                 </div>
                 <div className="mt-4 rounded bg-dark-900 p-2 font-mono text-xs text-gray-500">Cross-cloud logging pattern</div>
               </div>
@@ -139,10 +139,10 @@ export default function CommandCenter() {
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="font-bold text-gray-100"><i className="pi pi-box mr-2 text-purple-300" />K8s / Docker</h3>
-                    <Tag severity="warning" value="Monitoring" />
+                    <Tag severity="warning" value="Demo view" />
                   </div>
                   <p className="text-xs text-gray-400">AKS/EKS audit rule: repo-backed</p>
-                  <p className="text-xs text-gray-400">Trivy Image Scans: Active</p>
+                  <p className="text-xs text-gray-400">Trivy scanner: CI-defined</p>
                 </div>
                 <div className="mt-4 rounded border border-emerald-500/30 bg-dark-900 p-2 font-mono text-xs text-emerald-300">
                   Demo telemetry labelled
@@ -157,8 +157,8 @@ export default function CommandCenter() {
             </div>
             <MeterGroup values={appSecMeters} className="mb-4" />
             <div className="mt-4 flex justify-between border-t border-dark-700 pt-3 font-mono text-xs text-gray-500">
-              <span>Last Scan: {new Date().toLocaleDateString()}</span>
-              <span>Detection Assertion: mock/local</span>
+              <span>Snapshot date: {new Date().toLocaleDateString()}</span>
+              <span>Detection assertion: metadata/sample validation locally</span>
             </div>
           </Card>
 

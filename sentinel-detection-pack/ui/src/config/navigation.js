@@ -10,7 +10,7 @@ export const navSections = [
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
       { path: '/cloud-security-controls', icon: 'pi-shield', label: 'Cloud Security Controls', keywords: 'azure policy defender oidc logging cost governance' },
       { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps', keywords: 'cost ingestion savings' },
-      { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture', keywords: 'azure findings' },
+      { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture Demo', keywords: 'azure findings demo resource graph' },
     ],
   },
   {
@@ -24,16 +24,16 @@ export const navSections = [
     section: 'Active Defense',
     items: [
       { path: '/incidents', icon: 'pi-shield', label: 'Demo Incidents', keywords: 'alerts queue triage simulated' },
-      { path: '/kubernetes', icon: 'pi-box', label: 'K8s Telemetry', keywords: 'kubernetes aks eks container' },
+      { path: '/kubernetes', icon: 'pi-box', label: 'Demo K8s Telemetry', keywords: 'kubernetes aks eks container demo' },
       { path: '/copilot', icon: 'pi-bolt', label: 'Copilot Concept', keywords: 'genai assistant triage demo' },
-      { path: '/soar', icon: 'pi-sitemap', label: 'SOAR Playbooks', keywords: 'logic app automation remediation' },
+      { path: '/soar', icon: 'pi-sitemap', label: 'SOAR Design', keywords: 'logic app automation remediation human approval' },
     ],
   },
   {
     section: 'DevSecOps',
     items: [
       { path: '/appsec', icon: 'pi-verified', label: 'AppSec & Supply Chain', keywords: 'trivy tfsec gitleaks cve scan' },
-      { path: '/drift', icon: 'pi-sync', label: 'IaC Drift & Pipeline', keywords: 'terraform drift ci cd deploy' },
+      { path: '/drift', icon: 'pi-sync', label: 'Drift Demo & Pipeline', keywords: 'terraform drift ci cd deploy demo' },
       { path: '/iac', icon: 'pi-server', label: 'Infrastructure as Code', keywords: 'terraform source code modules' },
     ],
   },
@@ -46,7 +46,7 @@ export const navSections = [
       { path: '/kql', icon: 'pi-database', label: 'KQL Demo Playground', keywords: 'kusto query hunt sample' },
       { path: '/mitre', icon: 'pi-th-large', label: 'MITRE ATT&CK', keywords: 'tactics techniques coverage navigator' },
       { path: '/simulator', icon: 'pi-exclamation-triangle', label: 'Attack Visualizer', keywords: 'simulate adversary emulation demo' },
-      { path: '/investigation', icon: 'pi-share-alt', label: 'Investigation', keywords: 'graph entities workbench' },
+      { path: '/investigation', icon: 'pi-share-alt', label: 'Demo Investigation', keywords: 'graph entities workbench demo' },
       { path: '/threat-map', icon: 'pi-map', label: 'Demo Threat Map', keywords: 'global ioc intel demo' },
     ],
   },

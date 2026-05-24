@@ -56,14 +56,14 @@ export default function AppSecDashboard() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-rose-200">AppSec &amp; Supply Chain</h1>
             <p className="text-gray-400">
-              Shift-left scan results from the CI/CD pipeline &mdash; Gitleaks secrets, TFSec IaC, and Trivy dependency CVEs.
+              CI security gate model and demo finding examples for Gitleaks, TFSec, Trivy, and CodeQL.
             </p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 font-mono text-xs text-gray-500">
           <span>workflow: DevSecOps CI/CD Pipeline</span>
           <span>commit: {scan.commit}</span>
-          <span>last run: {new Date(scan.lastRun).toLocaleString()}</span>
+          <span>snapshot: {new Date(scan.lastRun).toLocaleString()}</span>
         </div>
       </section>
 
@@ -72,6 +72,13 @@ export default function AppSecDashboard() {
           severity="warn"
           className="w-full justify-start"
           text="Pipeline gate is non-blocking: TFSec steps run with soft_fail: true, so these findings never fail the build. Set soft_fail: false to enforce."
+        />
+      )}
+      {scan.gateBlocking && (
+        <Message
+          severity="info"
+          className="w-full justify-start"
+          text="The committed workflow uses blocking HIGH+ TFSec gates. Findings shown below are demo examples unless backed by a SARIF or Actions artifact."
         />
       )}
 
@@ -111,7 +118,7 @@ export default function AppSecDashboard() {
         </div>
       </Card>
 
-      <Card title="IaC Misconfigurations (TFSec)" className="border border-dark-700 bg-dark-900 shadow-xl">
+      <Card title="IaC Finding Examples (TFSec)" className="border border-dark-700 bg-dark-900 shadow-xl">
         <p className="mb-4 text-sm text-gray-400">
           Demo AppSec findings shaped around the Terraform modules. Use them as reviewer examples, not as current scan output.
         </p>

@@ -35,21 +35,20 @@ export const telemetryEngine = {
   })),
 
   // ---------------------------------------------------------------------------
-  // DevSecOps pipeline telemetry.
+  // DevSecOps pipeline demo telemetry.
   // NOTE: this is illustrative demo data for the portfolio UI. The shapes mirror
   // the real output of the scanners wired in .github/workflows/sentinel-ci-cd.yaml
-  // (Gitleaks, TFSec x4 modules, Trivy) and the nightly job in
-  // .github/workflows/drift-detection.yaml. The IaC findings below are the ACTUAL
-  // misconfigurations present in this repo's Terraform, so the dashboard doubles
-  // as a real remediation backlog. Swap these generators for SARIF/artifact
-  // parsing to make the views production-real.
+  // (Gitleaks, TFSec, Trivy) and the nightly job in
+  // .github/workflows/drift-detection.yaml. These examples are intentionally
+  // labelled as demo data; use workflow SARIF/artifact parsing before treating
+  // them as current scan output.
   // ---------------------------------------------------------------------------
 
   generateAppSecScan: () => {
     const scanners = [
       { name: 'Gitleaks', type: 'Secret scanning', status: 'pass', findings: 0, target: 'full repository history' },
-      { name: 'TFSec', type: 'IaC misconfiguration', status: 'warn', findings: 7, target: '4 Terraform modules' },
-      { name: 'Trivy', type: 'Dependency CVE (fs)', status: 'warn', findings: 5, target: 'go.sum, package-lock.json' },
+      { name: 'TFSec', type: 'IaC misconfiguration', status: 'pass', findings: 0, target: '5 Terraform modules, HIGH+ blocking gate' },
+      { name: 'Trivy', type: 'Dependency CVE (fs)', status: 'warn', findings: 2, target: 'go.sum, package-lock.json' },
     ];
 
     const cves = [
@@ -60,21 +59,19 @@ export const telemetryEngine = {
       { id: 'CVE-2024-4067', pkg: 'micromatch', installed: '4.0.5', fixed: '4.0.8', severity: 'MEDIUM', target: 'ui/package-lock.json' },
     ];
 
-    // These map to real issues in the committed Terraform - see file references.
+    // Historical/demo examples used to explain what the shift-left gate catches.
     const iacFindings = [
-      { rule: 'general-secret-in-code', severity: 'CRITICAL', module: 'terraform-honeypot', resource: 'azurerm_windows_virtual_machine.honeypot_vm', file: 'terraform-honeypot/main.tf:49', detail: 'Admin password is hard-coded in plaintext (admin_password).' },
-      { rule: 'aws-s3-enable-bucket-encryption', severity: 'HIGH', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'CloudTrail log bucket has no server-side encryption configured.' },
-      { rule: 'aws-s3-no-public-access-block', severity: 'HIGH', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'No public access block attached to the log bucket.' },
-      { rule: 'azure-rbac-least-privilege', severity: 'HIGH', module: 'terraform-soar', resource: 'azurerm_role_assignment.soar_user_admin', file: 'terraform-soar/main.tf:39', detail: 'SOAR identity granted User Administrator at subscription scope.' },
-      { rule: 'aws-s3-enable-bucket-logging', severity: 'MEDIUM', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'Access logging is not enabled on the log bucket.' },
-      { rule: 'aws-s3-enable-versioning', severity: 'MEDIUM', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf:19', detail: 'Object versioning is not enabled for tamper protection.' },
-      { rule: 'aws-iam-no-placeholder-principal', severity: 'LOW', module: 'terraform-aws-connector', resource: 'aws_iam_role.sentinel_aws_connector', file: 'terraform-aws-connector/main.tf:43', detail: 'AssumeRole trust uses a placeholder account id (123456789012).' },
+      { rule: 'general-secret-in-code', severity: 'CRITICAL', module: 'terraform-honeypot', resource: 'azurerm_windows_virtual_machine.honeypot_vm', file: 'terraform-honeypot/main.tf', detail: 'Historical issue: hard-coded admin password. Current module uses random_password.' },
+      { rule: 'aws-s3-enable-bucket-encryption', severity: 'HIGH', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf', detail: 'Historical issue: unencrypted CloudTrail log bucket. Current module uses a KMS CMK.' },
+      { rule: 'aws-s3-no-public-access-block', severity: 'HIGH', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf', detail: 'Historical issue: missing S3 public access block. Current module blocks public access.' },
+      { rule: 'azure-rbac-least-privilege', severity: 'HIGH', module: 'terraform-soar', resource: 'azurerm_role_assignment.soar_network_contributor', file: 'terraform-soar/main.tf', detail: 'Historical issue: broad SOAR permissions. Current role assignment is opt-in and resource-group scoped.' },
+      { rule: 'aws-s3-enable-bucket-logging', severity: 'MEDIUM', module: 'terraform-aws-connector', resource: 'aws_s3_bucket.sentinel_cloudtrail', file: 'terraform-aws-connector/main.tf', detail: 'Design tradeoff: S3 server access logging is documented as out of scope for the demo module.' },
     ];
 
     return {
       lastRun: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
       commit: '1ab9e4f',
-      gateBlocking: false, // TFSec steps run with soft_fail: true
+      gateBlocking: true,
       scanners,
       cves,
       iacFindings,

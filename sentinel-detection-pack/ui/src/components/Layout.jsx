@@ -20,7 +20,7 @@ export default function Layout({ children }) {
     }
   }, []);
 
-  // Global ⌘K / Ctrl+K command palette shortcut.
+  // Global Cmd+K / Ctrl+K command palette shortcut.
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -102,7 +102,7 @@ export default function Layout({ children }) {
             <i className="pi pi-search text-xs" />
             <span className="flex-1 text-left">Search or jump to...</span>
             <kbd className="rounded border border-soc-border px-1.5 py-0.5 text-[10px]">
-              {isMac ? '⌘' : 'Ctrl'} K
+              {isMac ? 'Cmd' : 'Ctrl'} K
             </kbd>
           </button>
 
