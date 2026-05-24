@@ -41,6 +41,7 @@ export const navSections = [
     items: [
       { path: '/rules', icon: 'pi-list', label: 'Detection Rules', keywords: 'kql detections catalog' },
       { path: '/detection-engineering', icon: 'pi-search-plus', label: 'Detection Deep-Dive', keywords: 'tuning false positive logic password spray' },
+      { path: '/scenario/password-spray', icon: 'pi-lock', label: 'Password Spray Scenario', keywords: 'entra id password spray scenario investigation' },
       { path: '/kql', icon: 'pi-database', label: 'KQL Demo Playground', keywords: 'kusto query hunt sample' },
       { path: '/mitre', icon: 'pi-th-large', label: 'MITRE ATT&CK', keywords: 'tactics techniques coverage navigator' },
       { path: '/simulator', icon: 'pi-exclamation-triangle', label: 'Attack Visualizer', keywords: 'simulate adversary emulation demo' },
