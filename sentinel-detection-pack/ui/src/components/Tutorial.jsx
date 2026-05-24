@@ -24,7 +24,7 @@ const TUTORIALS = {
     color: 'cyber',
     cert: 'Aligns with SC-200',
     steps: [
-      { id: 1, title: 'Read the Reviewer Home', description: 'Start with the lab overview: repo-backed architecture, AppSec gate status, and clearly labelled demo evidence.', link: '/', action: 'Open Reviewer Home', tip: 'This is a portfolio review flow, not a production SOC queue.', why: 'Situational awareness starts with knowing what evidence is real and what is simulated.' },
+      { id: 1, title: 'Read Reviewer Mode', description: 'Start with the lab overview: repo-backed architecture, AppSec gate status, and clearly labelled demo evidence.', link: '/', action: 'Open Reviewer Mode', tip: 'This is a portfolio review flow, not a production SOC queue.', why: 'Situational awareness starts with knowing what evidence is real and what is simulated.' },
       { id: 2, title: 'Triage Incidents', description: 'Work the incident queue, sorted by severity and SLA.', link: '/incidents', action: 'View Incidents', why: 'Prioritization under SLA pressure is the core SOC skill.' },
       { id: 3, title: 'Investigate the Entity Graph', description: 'Pivot across users, IPs, devices and processes to scope the blast radius.', link: '/investigation', action: 'Open Investigation', why: 'Scoping determines whether one box or the whole tenant is compromised.' },
       { id: 4, title: 'Hunt with KQL', description: 'Query telemetry for additional indicators of compromise.', link: '/kql', action: 'Open KQL Playground', why: 'KQL fluency separates button-clickers from real analysts.' },

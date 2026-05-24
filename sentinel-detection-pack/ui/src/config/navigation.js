@@ -4,7 +4,8 @@ export const navSections = [
   {
     section: 'Executive View',
     items: [
-      { path: '/', icon: 'pi-globe', label: 'Reviewer Home', keywords: 'home overview dashboard reviewer lab' },
+      { path: '/', icon: 'pi-globe', label: 'Reviewer Mode', keywords: 'home overview dashboard reviewer lab evidence' },
+      { path: '/command-center', icon: 'pi-desktop', label: 'Lab Dashboard', keywords: 'command center summary dashboard' },
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
       { path: '/finops', icon: 'pi-dollar', label: 'Security FinOps', keywords: 'cost ingestion savings' },
       { path: '/posture', icon: 'pi-cloud', label: 'IaC Posture', keywords: 'azure findings' },
