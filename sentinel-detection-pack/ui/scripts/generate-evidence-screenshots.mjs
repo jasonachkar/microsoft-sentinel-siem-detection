@@ -71,22 +71,27 @@ async function waitForServer(url, timeoutMs = 60_000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
       if (res.ok) return;
     } catch {
       /* retry */
     }
     await sleep(500);
   }
-  throw new Error(`Server not ready at ${url}`);
+  throw new Error(`Server not ready at ${url} after ${timeoutMs}ms`);
 }
 
 function startPreviewServer() {
-  return spawn('npm', ['run', 'preview', '--', '--host', '127.0.0.1', '--port', PORT], {
-    cwd: UI_ROOT,
-    stdio: 'pipe',
-    shell: true,
+  const child = spawn(
+    'npm',
+    ['run', 'preview', '--', '--host', '127.0.0.1', '--port', PORT],
+    { cwd: UI_ROOT, stdio: 'pipe', shell: process.platform === 'win32' },
+  );
+  child.stderr?.on('data', (chunk) => {
+    const line = chunk.toString().trim();
+    if (line) console.error(`[preview] ${line}`);
   });
+  return child;
 }
 
 async function generateIndex(generatedAt) {
@@ -132,42 +137,46 @@ async function main() {
   let server;
   let startedServer = false;
 
-  if (!process.env.PORTFOLIO_EVIDENCE_URL) {
-    if (!process.env.PLAYWRIGHT_SKIP_WEBSERVER) {
+  try {
+    if (process.env.PORTFOLIO_EVIDENCE_URL) {
+      await waitForServer(BASE_URL);
+    } else if (!process.env.PLAYWRIGHT_SKIP_WEBSERVER) {
       server = startPreviewServer();
       startedServer = true;
       await waitForServer(BASE_URL);
     }
-  } else {
-    await waitForServer(BASE_URL);
+
+    const browser = await chromium.launch();
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    page.setDefaultNavigationTimeout(45_000);
+    page.setDefaultTimeout(30_000);
+
+    await page.addInitScript(() => {
+      localStorage.setItem('sentinel-tour-seen', '1');
+    });
+
+    const generatedAt = new Date().toISOString();
+
+    for (const capture of CAPTURES) {
+      await page.setViewportSize(capture.viewport);
+      await page.goto(`${BASE_URL}${capture.route}`, { waitUntil: 'domcontentloaded' });
+      await page.getByText(capture.waitFor, { exact: false }).first().waitFor({ state: 'visible', timeout: 30_000 });
+      await page.locator('main').waitFor({ state: 'visible' });
+      await sleep(400);
+      const outPath = path.join(EVIDENCE_DIR, capture.file);
+      await page.screenshot({ path: outPath, fullPage: true });
+      console.log(`Wrote ${outPath}`);
+    }
+
+    await browser.close();
+    await generateIndex(generatedAt);
+    console.log(`Wrote ${path.join(EVIDENCE_DIR, 'evidence-index.md')}`);
+  } finally {
+    if (startedServer && server) {
+      server.kill('SIGTERM');
+    }
   }
-
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
-  await page.addInitScript(() => {
-    localStorage.setItem('sentinel-tour-seen', '1');
-  });
-
-  const generatedAt = new Date().toISOString();
-
-  for (const capture of CAPTURES) {
-    await page.setViewportSize(capture.viewport);
-    await page.goto(`${BASE_URL}${capture.route}`, { waitUntil: 'networkidle' });
-    await page.getByText(capture.waitFor, { exact: false }).first().waitFor({ state: 'visible', timeout: 30_000 });
-    await page.locator('main').waitFor({ state: 'visible' });
-    await sleep(400);
-    const outPath = path.join(EVIDENCE_DIR, capture.file);
-    await page.screenshot({ path: outPath, fullPage: true });
-    console.log(`Wrote ${outPath}`);
-  }
-
-  await browser.close();
-  if (startedServer && server) server.kill('SIGTERM');
-
-  await generateIndex(generatedAt);
-  console.log(`Wrote ${path.join(EVIDENCE_DIR, 'evidence-index.md')}`);
 }
 
 main().catch((err) => {
