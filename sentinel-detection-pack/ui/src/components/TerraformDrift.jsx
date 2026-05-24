@@ -6,6 +6,8 @@ import { Divider } from 'primereact/divider';
 import { Tag } from 'primereact/tag';
 import { telemetryEngine } from '../services/telemetryEngine';
 
+const repoBase = 'https://github.com/jasonachkar/microsoft-sentinel-siem-detection/blob/main/';
+
 const runResultTag = (result) => {
   const map = {
     success: { severity: 'success', label: 'SUCCESS' },
@@ -22,6 +24,19 @@ const logColor = {
   info: 'text-gray-400',
   warn: 'text-yellow-300',
 };
+
+function RepoPath({ path }) {
+  return (
+    <a
+      href={`${repoBase}${path.replaceAll('\\', '/')}`}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex rounded border border-blue-500/20 bg-blue-500/10 px-2 py-1 font-mono text-xs text-blue-200 hover:bg-blue-500/20"
+    >
+      {path}
+    </a>
+  );
+}
 
 export default function TerraformDrift() {
   const [report] = useState(() => telemetryEngine.generateDriftReport());
@@ -53,10 +68,15 @@ export default function TerraformDrift() {
             <i className="pi pi-sync text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-violet-200">IaC Drift &amp; Pipeline</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-violet-200">IaC Drift Detection Demo</h1>
             <p className="text-gray-400">
-              Nightly Terraform drift detection, CI/CD run history, and the Go deployment CLI output.
+              Repo-backed nightly Terraform drift workflow with sample resource state and sample incidentization output.
             </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Tag value="Workflow is real CI" severity="success" />
+              <Tag value="Resource table is demo data" severity="warning" />
+              <Tag value="Requires remote state secrets" severity="info" />
+            </div>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 font-mono text-xs text-gray-500">
@@ -80,7 +100,24 @@ export default function TerraformDrift() {
         </div>
       </div>
 
-      <Card title="Tracked Infrastructure State" className="border border-dark-700 bg-dark-900 shadow-xl">
+      <Card title="Workflow Proof Paths" className="border border-dark-700 bg-dark-900 shadow-xl">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-dark-700 bg-dark-950 p-4">
+            <div className="mb-2 text-sm font-semibold text-gray-200">Workflow</div>
+            <RepoPath path=".github/workflows/drift-detection.yaml" />
+          </div>
+          <div className="rounded-lg border border-dark-700 bg-dark-950 p-4">
+            <div className="mb-2 text-sm font-semibold text-gray-200">Runbook</div>
+            <RepoPath path="docs/drift-detection.md" />
+          </div>
+          <div className="rounded-lg border border-dark-700 bg-dark-950 p-4">
+            <div className="mb-2 text-sm font-semibold text-gray-200">Sample issue</div>
+            <RepoPath path="docs/samples/drift-incident-example.md" />
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Sample Drift State" className="border border-dark-700 bg-dark-900 shadow-xl">
         <DataTable value={report.resources} size="small" responsiveLayout="scroll" className="p-datatable-sm">
           <Column field="name" header="Resource" className="font-mono text-blue-300" />
           <Column field="type" header="Type" className="text-sm text-gray-400" />
@@ -93,7 +130,8 @@ export default function TerraformDrift() {
           <div className="mt-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
             <i className="pi pi-exclamation-triangle mr-2" />
             {summary.drifted} resource(s) drifted from the committed state. The nightly job opens a GitHub issue labelled
-            <span className="font-mono"> security / drift / incident</span> so the change can be reconciled or imported.
+            <span className="font-mono"> security / drift / incident</span> when this happens in a configured Azure environment.
+            This table is demo data for reviewer flow.
           </div>
         )}
       </Card>
@@ -113,8 +151,8 @@ export default function TerraformDrift() {
 
         <Card title="Go Deployment CLI" className="border border-dark-700 bg-dark-900 shadow-xl">
           <p className="mb-3 text-sm text-gray-400">
-            Output from <span className="font-mono text-gray-300">src-cli</span> walking the YAML rules and pushing them to
-            the Sentinel AlertRules API via federated credentials.
+            Example output from <span className="font-mono text-gray-300">src-cli</span> walking YAML rules and validating
+            Sentinel scheduled-rule mappings. Live apply requires configured Azure credentials.
           </p>
           <div className="h-64 overflow-auto rounded-lg border border-dark-700 bg-black p-4 font-mono text-xs leading-relaxed">
             {deployLog.map((line, i) => (

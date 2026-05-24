@@ -48,7 +48,7 @@ export const evidenceCatalog = [
     title: 'Terraform drift detection',
     status: 'real-ci',
     confidence: 'verified',
-    repoPaths: ['.github/workflows/drift-detection.yaml'],
+    repoPaths: ['.github/workflows/drift-detection.yaml', 'docs/drift-detection.md', 'docs/samples/drift-incident-example.md'],
     summary: 'Scheduled Terraform plan uses detailed exit codes and opens an issue when drift is detected.',
     cloudSecuritySkill: 'Cloud posture drift detection and incidentization.',
     interviewTalkingPoint: 'Manual portal changes become visible as trackable security work.',
