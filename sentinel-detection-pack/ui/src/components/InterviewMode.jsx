@@ -125,7 +125,7 @@ export default function InterviewMode() {
             <i className="pi pi-comments text-xl" />
           </span>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-cyan-100">Interview Prep</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-cyan-100">Candidate Brief</h1>
             <p className="text-gray-400">
               Skills matrix, hard questions, safe resume bullets, and claims this lab does not make.
               For repo-backed proof cards, see{' '}

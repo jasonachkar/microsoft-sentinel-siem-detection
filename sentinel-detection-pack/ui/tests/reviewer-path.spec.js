@@ -29,9 +29,9 @@ test.describe('Reviewer path smoke tests', () => {
     await assertNoConsoleErrors(errors);
   });
 
-  test('Interview Prep page loads', async ({ page }) => {
+  test('Candidate Brief page loads', async ({ page }) => {
     const errors = await gotoRoute(page, '/interview');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Interview Prep/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Candidate Brief/i);
     await assertPageHasText(page, 'Skills matrix', 'Claims I do not make');
     await assertNoConsoleErrors(errors);
   });

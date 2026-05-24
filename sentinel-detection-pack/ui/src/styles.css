@@ -150,3 +150,27 @@ kbd {
 main > * {
   animation: animate-in 0.32s ease-out both;
 }
+
+/* --- Responsive safety net ------------------------------------------- */
+/* Media never forces horizontal page overflow. */
+img,
+video {
+  max-width: 100%;
+}
+
+/* DataTables scroll internally instead of widening the page. */
+.p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+/* Tags wrap rather than clip on narrow viewports. */
+.p-tag {
+  white-space: normal;
+  height: auto;
+}
+
+/* Long tokens (repo paths, hashes, KQL) wrap inside their cards. */
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
