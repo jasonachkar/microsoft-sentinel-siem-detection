@@ -111,8 +111,11 @@ export default function Layout({ children }) {
           ))}
         </div>
 
-        <div className="border-t border-soc-border p-4 text-center text-xs text-soc-muted">
-          portfolio lab
+        <div className="flex items-center justify-between border-t border-soc-border px-4 py-3 text-xs text-soc-muted">
+          <span>portfolio lab</span>
+          <Link to="/interview" className="transition-colors hover:text-blue-300">
+            Candidate brief
+          </Link>
         </div>
       </aside>
 

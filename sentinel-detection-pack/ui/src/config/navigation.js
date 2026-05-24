@@ -12,6 +12,7 @@ export const navSections = [
     items: [
       { path: '/architecture', icon: 'pi-share-alt', label: 'Reference Architecture', keywords: 'topology diagram flow' },
       { path: '/iac', icon: 'pi-server', label: 'Infrastructure as Code', keywords: 'terraform source code modules' },
+      { path: '/decisions', icon: 'pi-book', label: 'Architecture Decisions', keywords: 'adr rationale why trade-off design' },
     ],
   },
   {
@@ -49,13 +50,6 @@ export const navSections = [
     section: 'Evidence',
     items: [
       { path: '/evidence', icon: 'pi-folder-open', label: 'Evidence', keywords: 'proof files screenshots real simulated limitations' },
-    ],
-  },
-  {
-    section: 'Interview Prep',
-    items: [
-      { path: '/interview', icon: 'pi-comments', label: 'Interview Prep', keywords: 'hiring manager skills questions resume claims' },
-      { path: '/decisions', icon: 'pi-book', label: 'Architecture Decisions', keywords: 'adr rationale why trade-off design' },
     ],
   },
   {

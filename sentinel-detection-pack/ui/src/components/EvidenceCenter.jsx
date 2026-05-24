@@ -137,10 +137,10 @@ export default function EvidenceCenter() {
       <section className="space-y-4">
         <SectionHeader
           title="Interview talking points"
-          description="Quick reference for what to say about each area. Full skills matrix lives on Interview Prep."
+          description="Quick reference for what to say about each area. Full skills matrix lives on the Candidate Brief."
           action={(
             <Link to="/interview" className="text-sm text-blue-300 hover:text-blue-200">
-              Interview Prep →
+              Candidate Brief →
             </Link>
           )}
         />
