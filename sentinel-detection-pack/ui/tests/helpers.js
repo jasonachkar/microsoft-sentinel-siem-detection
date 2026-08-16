@@ -1,15 +1,17 @@
 import { expect } from '@playwright/test';
 
-export const REVIEWER_ROUTES = ['/', '/architecture', '/scenario/password-spray', '/evidence', '/interview'];
+export const FLAGSHIP_RULE_ID = '0710c724-a738-4b0f-af52-947ba4f01c0d';
+
+export const PRIMARY_ROUTES = [
+  '/',
+  '/architecture',
+  '/detections',
+  `/detections/${FLAGSHIP_RULE_ID}`,
+  '/operations',
+  '/evidence',
+];
 
 export const REPO_BASE = 'https://github.com/jasonachkar/microsoft-sentinel-siem-detection';
-
-/** Skip welcome tour and seed stable localStorage before app boot. */
-export async function preparePage(page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('sentinel-tour-seen', '1');
-  });
-}
 
 /** Collect console errors; filter known benign browser noise. */
 export function trackConsoleErrors(page) {
@@ -24,7 +26,6 @@ export function trackConsoleErrors(page) {
 }
 
 export async function gotoRoute(page, path) {
-  await preparePage(page);
   const errors = trackConsoleErrors(page);
   await page.goto(path, { waitUntil: 'networkidle' });
   await expect(page.locator('#root')).not.toBeEmpty();
@@ -57,11 +58,11 @@ export async function assertMainContentVisible(page, minWidth = 200) {
 
 export async function openMobileNav(page) {
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
-  await expect(page.locator('aside').getByRole('link').first()).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('link').first()).toBeVisible();
 }
 
-export function sidebarLink(page, label) {
-  return page.locator('aside').getByRole('link', { name: new RegExp(label, 'i') });
+export function primaryNavLink(page, label) {
+  return page.locator('nav[aria-label="Primary"]').getByRole('link', { name: new RegExp(`^${label}$`, 'i') });
 }
 
 /**

@@ -8,6 +8,29 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Semantic tokens backing the primary reviewer surfaces (Home, Architecture,
+        // Detections, Operations, Evidence). Values live in src/styles/tokens.css so
+        // light/dark resolve from one source of truth instead of hardcoded hex.
+        background: 'var(--background)',
+        surface: 'var(--surface)',
+        'surface-subtle': 'var(--surface-subtle)',
+        'surface-elevated': 'var(--surface-elevated)',
+        border: 'var(--border)',
+        'border-strong': 'var(--border-strong)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-tertiary': 'var(--text-tertiary)',
+        accent: 'var(--accent)',
+        'accent-contrast': 'var(--accent-contrast)',
+        'accent-subtle': 'var(--accent-subtle)',
+        success: 'var(--success)',
+        'success-subtle': 'var(--success-subtle)',
+        warning: 'var(--warning)',
+        'warning-subtle': 'var(--warning-subtle)',
+        danger: 'var(--danger)',
+        'danger-subtle': 'var(--danger-subtle)',
+        // Legacy palette below is kept only for /lab/* demo pages, which are not
+        // being restyled in this pass. New primary-surface code must not use it.
         soc: {
           bg: '#0b0f19',
           panel: '#111827',

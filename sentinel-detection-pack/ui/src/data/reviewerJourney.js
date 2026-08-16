@@ -100,10 +100,10 @@ export const cloudSecurityControls = [
 
 export const fiveMinutePath = [
   { step: 'Architecture', route: '/architecture', why: 'See how repo, CI, Terraform, Sentinel, and SOAR connect.', time: '60 sec' },
-  { step: 'Password Spray Scenario', route: '/scenario/password-spray', why: 'Flagship detection with KQL, entities, triage, and response tradeoffs.', time: '90 sec' },
-  { step: 'CI/CD & Drift', route: '/drift', why: 'Security gates, Terraform plan, and drift incidentization.', time: '45 sec' },
+  { step: 'Password Spray Scenario', route: '/detections/0710c724-a738-4b0f-af52-947ba4f01c0d', why: 'Flagship detection with KQL, entities, triage, and response tradeoffs.', time: '90 sec' },
+  { step: 'Delivery & Response', route: '/operations', why: 'Security gates, Terraform plan, and drift incidentization.', time: '45 sec' },
   { step: 'Evidence', route: '/evidence', why: 'Repo-backed proof cards and real vs demo inventory.', time: '60 sec' },
-  { step: 'Limitations', route: '/evidence#limitations', why: 'Honest scope: demo telemetry, mock assertion, and planned SOAR.', time: '45 sec' },
+  { step: 'Project scope', route: '/evidence#limitations', why: 'Honest scope: demo telemetry, mock assertion, and planned SOAR.', time: '45 sec' },
 ];
 
 export const whatThisProves = [

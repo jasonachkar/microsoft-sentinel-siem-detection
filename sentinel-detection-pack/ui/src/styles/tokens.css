@@ -1,0 +1,90 @@
+/*
+ * Semantic design tokens. Every primary-surface color reference should resolve
+ * through one of these variables, not a hardcoded hex value or a Tailwind
+ * palette shade. Light is the base definition; dark overrides both the
+ * system-preference case and the explicit user-toggle case so the two never
+ * disagree.
+ */
+
+:root {
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --surface-subtle: #f1f3f6;
+  --surface-elevated: #ffffff;
+  --border: #e2e5ea;
+  --border-strong: #c9ced6;
+  --text-primary: #14171f;
+  --text-secondary: #4b5262;
+  --text-tertiary: #767e8c;
+  --accent: #2457d9;
+  --accent-contrast: #ffffff;
+  --accent-subtle: #e8edfc;
+  --success: #12795e;
+  --success-subtle: #e2f4ee;
+  --warning: #9a6300;
+  --warning-subtle: #fbf0dd;
+  --danger: #b3261e;
+  --danger-subtle: #fbe6e4;
+  --shadow-color: 220 20% 10%;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --background: #0d0f14;
+    --surface: #14171f;
+    --surface-subtle: #191c25;
+    --surface-elevated: #1b1f29;
+    --border: #262b36;
+    --border-strong: #363c4a;
+    --text-primary: #eef0f4;
+    --text-secondary: #a8afbd;
+    --text-tertiary: #767e8c;
+    --accent: #6d92ff;
+    --accent-contrast: #0d0f14;
+    --accent-subtle: #1c2740;
+    --success: #4fbf9c;
+    --success-subtle: #14261f;
+    --warning: #e0a83e;
+    --warning-subtle: #2c2415;
+    --danger: #e2645c;
+    --danger-subtle: #2c1917;
+    --shadow-color: 220 40% 2%;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --background: #0d0f14;
+  --surface: #14171f;
+  --surface-subtle: #191c25;
+  --surface-elevated: #1b1f29;
+  --border: #262b36;
+  --border-strong: #363c4a;
+  --text-primary: #eef0f4;
+  --text-secondary: #a8afbd;
+  --text-tertiary: #767e8c;
+  --accent: #6d92ff;
+  --accent-contrast: #0d0f14;
+  --accent-subtle: #1c2740;
+  --success: #4fbf9c;
+  --success-subtle: #14261f;
+  --warning: #e0a83e;
+  --warning-subtle: #2c2415;
+  --danger: #e2645c;
+  --danger-subtle: #2c1917;
+  --shadow-color: 220 40% 2%;
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

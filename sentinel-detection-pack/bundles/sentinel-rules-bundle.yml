@@ -19,7 +19,7 @@ rules:
     dataTypes:
     - AuditLogs
   queryFrequency: PT5M
-  queryPeriod: PT1D
+  queryPeriod: P1D
   triggerOperator: GreaterThan
   triggerThreshold: 0
   tactics:
@@ -165,7 +165,7 @@ rules:
       columnName: ResourceId
   kind: Scheduled
   version: 1.0.0
-- id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+- id: 8a1b2c3d-4e5f-4a7b-8c9d-0e1f2a3b4c5d
   name: 'Kubernetes: Suspicious Container Execution'
   description: 'Detects when a user executes an interactive terminal, such as /bin/bash
     or /bin/sh,
@@ -234,7 +234,7 @@ rules:
     dataTypes:
     - AzureActivity
   queryFrequency: PT1H
-  queryPeriod: PT1D
+  queryPeriod: P1D
   triggerOperator: GreaterThan
   triggerThreshold: 0
   tactics:

@@ -1,15 +1,28 @@
 import { test, expect } from '@playwright/test';
-import { navSections } from '../src/config/navigation.js';
-import { preparePage, REPO_BASE } from './helpers.js';
+import { primaryNav, labNav, GITHUB_URL } from '../src/config/navigation.ts';
+import { REPO_BASE } from './helpers.js';
 
-const navRoutes = navSections.flatMap((section) =>
-  section.items.map((item) => ({ ...item, section: section.section })),
-);
+test.describe('Primary navigation structure', () => {
+  test('primary nav has no more than five internal destinations', async () => {
+    expect(primaryNav.length).toBeLessThanOrEqual(5);
+  });
 
-test.describe('Internal navigation routes', () => {
-  for (const item of navRoutes) {
-    test(`${item.section} → ${item.label} (${item.path}) loads`, async ({ page }) => {
-      await preparePage(page);
+  test('primary nav renders exactly the expected labels, in order', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const nav = page.locator('nav[aria-label="Primary"]');
+    const labels = await nav.getByRole('link').allInnerTexts();
+    expect(labels).toEqual(primaryNav.map((item) => item.label));
+  });
+
+  test('GitHub link in the header points to the repository', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const link = page.getByRole('link', { name: 'GitHub' }).first();
+    await expect(link).toHaveAttribute('href', GITHUB_URL);
+    expect(GITHUB_URL.startsWith(REPO_BASE)).toBe(true);
+  });
+
+  for (const item of primaryNav) {
+    test(`primary route ${item.path} loads with visible content`, async ({ page }) => {
       await page.goto(item.path, { waitUntil: 'networkidle' });
       await expect(page.locator('#root')).not.toBeEmpty();
       await expect(page.locator('main')).toBeVisible();
@@ -19,18 +32,20 @@ test.describe('Internal navigation routes', () => {
   }
 });
 
-test.describe('GitHub proof links on Start Here', () => {
-  test('top proof links use the correct repository base URL', async ({ page }) => {
-    await preparePage(page);
-    await page.goto('/', { waitUntil: 'networkidle' });
+test.describe('Lab sandbox routes', () => {
+  for (const item of labNav) {
+    test(`lab route ${item.path} loads but is not in primary nav`, async ({ page }) => {
+      await page.goto(item.path, { waitUntil: 'networkidle' });
+      await expect(page.locator('main')).toBeVisible();
 
-    const proofSection = page.locator('section').filter({ hasText: 'Top 5 proof links' });
-    const githubLinks = proofSection.locator(`a[href^="${REPO_BASE}/blob/main/"]`);
-    await expect(githubLinks).toHaveCount(5);
+      const primaryNavBar = page.locator('nav[aria-label="Primary"]');
+      const linkToLab = primaryNavBar.locator(`a[href="${item.path}"]`);
+      await expect(linkToLab).toHaveCount(0);
+    });
+  }
 
-    for (const link of await githubLinks.all()) {
-      const href = await link.getAttribute('href');
-      expect(href).toMatch(new RegExp(`^${REPO_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/blob/main/`));
-    }
+  test('lab pages show the experimental banner (except the index)', async ({ page }) => {
+    await page.goto('/lab/kql', { waitUntil: 'networkidle' });
+    await expect(page.getByText(/Lab sandbox — experimental\/demo page/i)).toBeVisible();
   });
 });

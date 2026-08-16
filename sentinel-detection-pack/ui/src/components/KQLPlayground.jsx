@@ -261,7 +261,7 @@ export default function KQLPlayground() {
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <QueryTemplates onSelect={setQuery} />
           
           <button

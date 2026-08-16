@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T20:29:34.157Z",
+  "generatedAt": "2026-08-16T17:13:15.219Z",
   "total": 16,
   "rules": [
     {
@@ -15,7 +15,7 @@
         "T1136.003"
       ],
       "queryFrequency": "PT5M",
-      "queryPeriod": "PT1D",
+      "queryPeriod": "P1D",
       "triggerOperator": "GreaterThan",
       "triggerThreshold": "0",
       "category": "cloud",
@@ -116,7 +116,7 @@
       "query": "let BaselinePeriod = 14d;\nlet DetectionWindow = 1h;\nlet MinSecretGets = 5;\nlet AllowedIPs = dynamic([]); // Optional allowlist for trusted service IPs\n// Normalize Key Vault secret access events.\nlet KeyVaultLogs = AzureDiagnostics\n| where TimeGenerated >= ago(BaselinePeriod)\n| where ResourceProvider == \"MICROSOFT.KEYVAULT\"\n| where tostring(OperationName) has \"Secret\"\n| extend IPAddress = tostring(CallerIPAddress)\n| extend Identity = coalesce(tostring(Identity), tostring(CallerObjectId), tostring(Caller), \"Unknown\")\n| extend ResourceId = tostring(ResourceId)\n| extend VaultName = tostring(extract(@\"/vaults/([^/]+)\", 1, ResourceId))\n| extend Operation = tostring(OperationName)\n| where IPAddress !in (AllowedIPs)\n| project TimeGenerated, Identity, IPAddress, ResourceId, VaultName, Operation;\n// Build a baseline of identity-to-IP combinations.\nlet Baseline = KeyVaultLogs\n| where TimeGenerated between (ago(BaselinePeriod) .. ago(DetectionWindow))\n| summarize by Identity, IPAddress;\n// Identify recent access from new IPs with high volume.\nlet Recent = KeyVaultLogs\n| where TimeGenerated >= ago(DetectionWindow)\n| summarize SecretGetCount=count(), FirstSeen=min(TimeGenerated), LastSeen=max(TimeGenerated), Operations=make_set(Operation, 5)\n  by Identity, IPAddress, ResourceId, VaultName;\nRecent\n| join kind=leftanti Baseline on Identity, IPAddress\n| where SecretGetCount >= MinSecretGets\n| extend Account = Identity\n| project TimeGenerated=LastSeen, Account, IPAddress, VaultName, ResourceId, SecretGetCount, Operations, FirstSeen, LastSeen\n"
     },
     {
-      "id": "8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+      "id": "8a1b2c3d-4e5f-4a7b-8c9d-0e1f2a3b4c5d",
       "name": "Kubernetes: Suspicious Container Execution",
       "description": "Detects when a user executes an interactive terminal, such as /bin/bash or /bin/sh,\ninside a running Kubernetes container using kubectl exec. This is a primary technique\n(T1609) for attackers administering containers or moving laterally in cloud-native environments.\n",
       "severity": "High",
@@ -129,8 +129,12 @@
       "queryFrequency": "PT5M",
       "queryPeriod": "PT1H",
       "triggerOperator": "GreaterThan",
-      "category": "unknown",
-      "dataSources": [],
+      "triggerThreshold": "0",
+      "category": "cloud",
+      "dataSources": [
+        "AKSAudit",
+        "AKSAuditAdmin"
+      ],
       "connectors": [
         "AzureKubernetesService"
       ],
@@ -159,7 +163,7 @@
         }
       ],
       "status": "Production",
-      "falsePositives": "Review and tune for environment",
+      "falsePositives": "Authorized cluster administration, break-glass troubleshooting, or approved SRE maintenance",
       "query": "let suspicious_commands = dynamic([\"/bin/bash\", \"/bin/sh\", \"curl\", \"wget\", \"nc\"]);\nAKSAuditAdmin\n| where Category == \"kube-audit\"\n| extend log_json = parse_json(Log)\n| where log_json.verb == \"create\"\n| where log_json.objectRef.resource == \"pods\" and log_json.objectRef.subresource == \"exec\"\n| extend command = tostring(log_json.requestObject.command)\n| where command has_any (suspicious_commands)\n| project TimeGenerated,\n    User=tostring(log_json.user.username),\n    Pod=tostring(log_json.objectRef.name),\n    Namespace=tostring(log_json.objectRef.namespace),\n    Command=command,\n    SourceIP=tostring(log_json.sourceIPs[0])\n| extend AccountCustomEntity = User\n| extend IPCustomEntity = SourceIP\n"
     },
     {
@@ -174,7 +178,7 @@
         "T1562"
       ],
       "queryFrequency": "PT1H",
-      "queryPeriod": "PT1D",
+      "queryPeriod": "P1D",
       "triggerOperator": "GreaterThan",
       "triggerThreshold": "0",
       "category": "cloud",

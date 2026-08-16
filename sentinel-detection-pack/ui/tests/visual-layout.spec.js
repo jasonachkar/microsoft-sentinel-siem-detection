@@ -1,28 +1,20 @@
 import { test, expect } from '@playwright/test';
-import { preparePage, assertNoHorizontalOverflow } from './helpers.js';
+import { PRIMARY_ROUTES } from './helpers.js';
 
 // Layout smoke test for the primary reviewer routes. This is intentionally NOT a
 // pixel-perfect screenshot test — it guards the structural failures that actually
 // break a portfolio review: body-level horizontal scrolling, a missing/clipped
 // primary heading, hidden main content, and unexpected console errors.
-const PRIMARY_ROUTES = [
-  '/',
-  '/architecture',
-  '/scenario/password-spray',
-  '/evidence',
-  '/cloud-security-controls',
-  '/drift',
-  '/soar',
-];
-
+//
+// Viewports match the brief's required desktop/laptop/mobile trio exactly.
 const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
-  { name: 'desktop', width: 1280, height: 720 },
-  { name: 'laptop', width: 1440, height: 900 },
+  { name: 'laptop', width: 1280, height: 800 },
+  { name: 'desktop', width: 1440, height: 900 },
 ];
 
-// Console noise expected when the optional live API / browser internals are offline.
-const BENIGN_CONSOLE = /favicon|\.map\b|devtools|Live API|Failed to fetch|net::ERR|ResizeObserver|AbortError/i;
+// Console noise expected from Monaco/ResizeObserver in headless CI.
+const BENIGN_CONSOLE = /favicon|\.map\b|devtools|ResizeObserver|AbortError/i;
 
 for (const vp of VIEWPORTS) {
   test.describe(`Visual layout smoke — ${vp.name} (${vp.width}x${vp.height})`, () => {
@@ -35,13 +27,10 @@ for (const vp of VIEWPORTS) {
           if (msg.type() === 'error' && !BENIGN_CONSOLE.test(msg.text())) errors.push(msg.text());
         });
 
-        await preparePage(page);
         await page.goto(route, { waitUntil: 'networkidle' });
 
-        // 1 & 5: main content is present and visible.
         await expect(page.locator('main')).toBeVisible();
 
-        // 2 & 6: a primary heading is visible and not clipped past the viewport edge.
         const heading = page.getByRole('heading', { level: 1 }).first();
         await expect(heading).toBeVisible();
         const box = await heading.boundingBox();
@@ -49,10 +38,11 @@ for (const vp of VIEWPORTS) {
         expect(box.x).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width).toBeLessThanOrEqual(vp.width + 2);
 
-        // 4: no body-level horizontal overflow.
-        await assertNoHorizontalOverflow(page);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        );
+        expect(overflow, `${route} should not scroll horizontally at ${vp.width}px`).toBe(false);
 
-        // 3: no unexpected console errors.
         expect(errors, `Console errors on ${route}:\n${errors.join('\n')}`).toEqual([]);
       });
     }
