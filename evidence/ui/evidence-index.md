@@ -1,6 +1,6 @@
 # UI Evidence Screenshots
 
-Generated: 2026-05-24T21:28:36.527Z
+Generated: 2026-08-16T17:11:03.685Z
 
 These are **automated UI reviewer evidence** captures from the portfolio React app.
 They are **not** Azure tenant or Sentinel portal screenshots.
@@ -8,13 +8,13 @@ Real cloud deployment proof still requires a configured lab environment.
 
 | Screenshot | Route | What it proves |
 | --- | --- | --- |
-| [start-here.png](./start-here.png) | `/` | Guided reviewer entry point with mission, proof pillars, and 5-minute path. |
-| [architecture.png](./architecture.png) | `/architecture` | End-to-end architecture narrative for detection engineering and cloud security. |
-| [password-spray-scenario.png](./password-spray-scenario.png) | `/scenario/password-spray` | Flagship Entra ID detection walkthrough with KQL, entities, and triage context. |
-| [evidence.png](./evidence.png) | `/evidence` | Repo-backed proof inventory separating real code, demo data, and limitations. |
-| [cloud-security-controls.png](./cloud-security-controls.png) | `/cloud-security-controls` | Cloud security control coverage: identity, logging, governance, and cost awareness. |
-| [ci-cd-drift.png](./ci-cd-drift.png) | `/drift` | DevSecOps: IaC drift detection, CI/CD security gate, and deploy automation (demo data). |
-| [mobile-start-here.png](./mobile-start-here.png) | `/` | Mobile layout of the Start Here reviewer journey. |
+| [overview.png](./overview.png) | `/` | Homepage answers what/why/where in the first viewport, with a repo-derived proof strip. |
+| [architecture.png](./architecture.png) | `/architecture` | Reference architecture, trust boundaries, infrastructure source, and featured ADRs. |
+| [detections.png](./detections.png) | `/detections` | Filterable detection catalog generated from rules-yaml at build time. |
+| [password-spray-detail.png](./password-spray-detail.png) | `/detections/0710c724-a738-4b0f-af52-947ba4f01c0d` | Flagship detection case study: KQL, tuning, false positives, and response runbook. |
+| [delivery-and-response.png](./delivery-and-response.png) | `/operations` | PR-to-Sentinel delivery lifecycle and the detection-to-response lifecycle. |
+| [evidence.png](./evidence.png) | `/evidence` | Repo-backed proof inventory with a six-state status vocabulary and project scope. |
+| [mobile-overview.png](./mobile-overview.png) | `/` | Mobile layout of the homepage. |
 
 ## Regenerate locally
 

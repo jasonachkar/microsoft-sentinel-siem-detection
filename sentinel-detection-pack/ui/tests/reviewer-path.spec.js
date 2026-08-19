@@ -1,68 +1,75 @@
 import { test, expect } from '@playwright/test';
-import { gotoRoute, assertNoConsoleErrors, assertPageHasText, preparePage, trackConsoleErrors } from './helpers.js';
+import { gotoRoute, assertNoConsoleErrors, assertPageHasText, FLAGSHIP_RULE_ID } from './helpers.js';
 
 test.describe('Reviewer path smoke tests', () => {
-  test('Start Here loads with guided review content', async ({ page }) => {
+  test('Overview loads and answers what/why/where in the first viewport', async ({ page }) => {
     const errors = await gotoRoute(page, '/');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await assertPageHasText(page, 'Start Here', 'What this project proves', '5-minute review path', 'Real vs');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Detection engineering, built as code/i);
+    await assertPageHasText(page, 'analytics rules', 'Terraform modules', 'Explore the architecture', 'View detections');
     await assertNoConsoleErrors(errors);
   });
 
-  test('Architecture page loads', async ({ page }) => {
+  test('no automatic tour or onboarding modal interrupts the first visit', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('Architecture page loads with tabs', async ({ page }) => {
     const errors = await gotoRoute(page, '/architecture');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/Architecture/i);
+    await assertPageHasText(page, 'Overview', 'Trust & identity', 'Infrastructure source', 'Decisions');
     await assertNoConsoleErrors(errors);
   });
 
-  test('Password Spray Scenario page loads', async ({ page }) => {
-    const errors = await gotoRoute(page, '/scenario/password-spray');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Password Spray/i);
-    await assertPageHasText(page, 'SigninLogs', 'MITRE');
+  test('Detections catalog loads with the real rule count', async ({ page }) => {
+    const errors = await gotoRoute(page, '/detections');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Detections/i);
+    await assertPageHasText(page, 'Entra ID Password Spray');
     await assertNoConsoleErrors(errors);
   });
 
-  test('Evidence page loads with proof inventory', async ({ page }) => {
+  test('Password Spray flagship detail loads with KQL and MITRE', async ({ page }) => {
+    const errors = await gotoRoute(page, `/detections/${FLAGSHIP_RULE_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Entra ID Password Spray/i);
+    await assertPageHasText(page, 'SigninLogs', 'T1110.003', 'Tuning', 'Repository evidence');
+    await assertNoConsoleErrors(errors);
+  });
+
+  test('Delivery & Response page loads with both lifecycles', async ({ page }) => {
+    const errors = await gotoRoute(page, '/operations');
+    await assertPageHasText(page, 'Delivery lifecycle', 'Response lifecycle', 'Human approval');
+    await assertNoConsoleErrors(errors);
+  });
+
+  test('Evidence page loads with the proof index', async ({ page }) => {
     const errors = await gotoRoute(page, '/evidence');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Repo-backed proof/i);
-    await assertPageHasText(page, 'Evidence', 'Verified proof cards', 'Real vs');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Evidence/i);
+    await assertPageHasText(page, 'Sentinel core infrastructure', 'CI validation', 'Project scope');
     await assertNoConsoleErrors(errors);
   });
 
-  test('Candidate Brief page loads', async ({ page }) => {
-    const errors = await gotoRoute(page, '/interview');
+  test('Candidate Brief loads from the footer link', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByRole('link', { name: 'Candidate brief' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/Candidate Brief/i);
-    await assertPageHasText(page, 'Skills matrix', 'Claims I do not make');
-    await assertNoConsoleErrors(errors);
   });
 
-  test('5-minute review path links navigate correctly', async ({ page }) => {
-    await preparePage(page);
-    trackConsoleErrors(page);
+  test('the primary journey is reachable by following real links, not memorized URLs', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
 
-    const clickPathLink = async (label) => {
-      const card = page.locator('a').filter({ hasText: label }).first();
-      await card.click();
-    };
-
-    await clickPathLink('Architecture');
+    await page.getByRole('link', { name: 'Explore the architecture' }).click();
     await expect(page).toHaveURL(/\/architecture$/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Architecture/i);
-    await page.goto('/', { waitUntil: 'networkidle' });
 
-    await clickPathLink('Password Spray Scenario');
-    await expect(page).toHaveURL(/\/scenario\/password-spray$/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Password Spray/i);
     await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByRole('link', { name: 'View detections' }).click();
+    await expect(page).toHaveURL(/\/detections$/);
 
-    await clickPathLink('Evidence');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByRole('link', { name: /Open full detection/i }).click();
+    await expect(page).toHaveURL(new RegExp(`/detections/${FLAGSHIP_RULE_ID}$`));
+
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByRole('link', { name: /Full evidence index/i }).click();
     await expect(page).toHaveURL(/\/evidence$/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Repo-backed proof/i);
-    await page.goto('/', { waitUntil: 'networkidle' });
-
-    await clickPathLink('CI/CD & Drift');
-    await expect(page).toHaveURL(/\/drift$/);
-    await expect(page.locator('main')).not.toBeEmpty();
   });
 });

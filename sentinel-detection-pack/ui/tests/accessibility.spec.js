@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { preparePage } from './helpers.js';
-
-const ROUTES = ['/', '/evidence', '/scenario/password-spray'];
+import { PRIMARY_ROUTES } from './helpers.js';
 
 // Serious a11y rules only — color-contrast noise is intentionally excluded for now.
 const SERIOUS_RULES = [
@@ -23,30 +21,50 @@ const SERIOUS_RULES = [
   'select-name',
 ];
 
+async function runAxe(page) {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'best-practice'])
+    .disableRules(['color-contrast', 'color-contrast-enhanced'])
+    .analyze();
+  const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  return serious.filter((v) => SERIOUS_RULES.includes(v.id) || v.impact === 'critical');
+}
+
 test.describe('Accessibility smoke checks', () => {
-  for (const route of ROUTES) {
+  for (const route of PRIMARY_ROUTES) {
     test(`${route} has no serious axe violations`, async ({ page }) => {
-      await preparePage(page);
       await page.goto(route, { waitUntil: 'networkidle' });
-
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'best-practice'])
-        .disableRules(['color-contrast', 'color-contrast-enhanced'])
-        .analyze();
-
-      const serious = results.violations.filter(
-        (v) => v.impact === 'serious' || v.impact === 'critical',
-      );
-      const filtered = serious.filter((v) => SERIOUS_RULES.includes(v.id) || v.impact === 'critical');
-
+      const filtered = await runAxe(page);
       expect(filtered, formatViolations(route, filtered)).toEqual([]);
     });
   }
 
-  test('document title is set on Start Here', async ({ page }) => {
-    await preparePage(page);
+  test('document title is set on Overview', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page).toHaveTitle(/Microsoft Sentinel Cloud Security Detection Engineering Lab/i);
+    await expect(page).toHaveTitle(/Sentinel/i);
+  });
+
+  test('dark theme has no serious axe violations on Overview', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: /^Theme:/ }).click(); // system -> light
+    await page.getByRole('button', { name: /^Theme:/ }).click(); // light -> dark
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    const filtered = await runAxe(page);
+    expect(filtered, formatViolations('/ (dark theme)', filtered)).toEqual([]);
+  });
+
+  test('reduced motion preference does not break the page', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    const filtered = await runAxe(page);
+    expect(filtered, formatViolations('/ (reduced motion)', filtered)).toEqual([]);
+  });
+
+  test('skip-to-content link is the first focusable element', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
   });
 });
 

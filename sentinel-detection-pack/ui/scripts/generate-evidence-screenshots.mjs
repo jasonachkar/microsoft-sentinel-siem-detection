@@ -21,52 +21,52 @@ const MOBILE = { width: 390, height: 844 };
 const CAPTURES = [
   {
     route: '/',
-    file: 'start-here.png',
+    file: 'overview.png',
     viewport: DESKTOP,
-    waitFor: 'Start Here',
-    proves: 'Guided reviewer entry point with mission, proof pillars, and 5-minute path.',
+    waitFor: 'Detection engineering, built as code',
+    proves: 'Homepage answers what/why/where in the first viewport, with a repo-derived proof strip.',
   },
   {
     route: '/architecture',
     file: 'architecture.png',
     viewport: DESKTOP,
-    waitFor: 'Reference Architecture',
-    proves: 'End-to-end architecture narrative for detection engineering and cloud security.',
+    waitFor: 'Architecture',
+    proves: 'Reference architecture, trust boundaries, infrastructure source, and featured ADRs.',
   },
   {
-    route: '/scenario/password-spray',
-    file: 'password-spray-scenario.png',
+    route: '/detections',
+    file: 'detections.png',
     viewport: DESKTOP,
-    waitFor: 'Password Spray',
-    proves: 'Flagship Entra ID detection walkthrough with KQL, entities, and triage context.',
+    waitFor: 'Detections',
+    proves: 'Filterable detection catalog generated from rules-yaml at build time.',
+  },
+  {
+    route: '/detections/0710c724-a738-4b0f-af52-947ba4f01c0d',
+    file: 'password-spray-detail.png',
+    viewport: DESKTOP,
+    waitFor: 'Entra ID Password Spray',
+    proves: 'Flagship detection case study: KQL, tuning, false positives, and response runbook.',
+  },
+  {
+    route: '/operations',
+    file: 'delivery-and-response.png',
+    viewport: DESKTOP,
+    waitFor: 'Delivery & Response',
+    proves: 'PR-to-Sentinel delivery lifecycle and the detection-to-response lifecycle.',
   },
   {
     route: '/evidence',
     file: 'evidence.png',
     viewport: DESKTOP,
-    waitFor: 'Verified proof cards',
-    proves: 'Repo-backed proof inventory separating real code, demo data, and limitations.',
-  },
-  {
-    route: '/cloud-security-controls',
-    file: 'cloud-security-controls.png',
-    viewport: DESKTOP,
-    waitFor: 'Cloud Security',
-    proves: 'Cloud security control coverage: identity, logging, governance, and cost awareness.',
-  },
-  {
-    route: '/drift',
-    file: 'ci-cd-drift.png',
-    viewport: DESKTOP,
-    waitFor: 'Drift',
-    proves: 'DevSecOps: IaC drift detection, CI/CD security gate, and deploy automation (demo data).',
+    waitFor: 'Proof index',
+    proves: 'Repo-backed proof inventory with a six-state status vocabulary and project scope.',
   },
   {
     route: '/',
-    file: 'mobile-start-here.png',
+    file: 'mobile-overview.png',
     viewport: MOBILE,
-    waitFor: 'Start Here',
-    proves: 'Mobile layout of the Start Here reviewer journey.',
+    waitFor: 'Detection engineering, built as code',
+    proves: 'Mobile layout of the homepage.',
   },
 ];
 
@@ -158,10 +158,6 @@ async function main() {
     const page = await context.newPage();
     page.setDefaultNavigationTimeout(45_000);
     page.setDefaultTimeout(30_000);
-
-    await page.addInitScript(() => {
-      localStorage.setItem('sentinel-tour-seen', '1');
-    });
 
     const generatedAt = new Date().toISOString();
 

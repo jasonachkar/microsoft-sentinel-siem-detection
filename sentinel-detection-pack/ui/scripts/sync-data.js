@@ -107,6 +107,27 @@ const bundle = readJson(bundlePath);
 const bundleRules = Array.isArray(bundle.rules) ? bundle.rules : [];
 const metadataById = collectKqlMetadata(rulesDir);
 
+// Domain is authoritatively the rules-yaml/<domain>/ folder name, since every
+// rule lives under exactly one domain folder. Built directly from the YAML
+// source rather than the .kql header cross-reference, which can miss rules
+// whose id doesn't line up between the two parallel formats.
+const rulesYamlDir = path.join(repoRoot, 'rules-yaml');
+function collectDomainById(dirPath, out = {}) {
+  if (!fs.existsSync(dirPath)) return out;
+  for (const domain of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    if (!domain.isDirectory()) continue;
+    const domainPath = path.join(dirPath, domain.name);
+    for (const file of fs.readdirSync(domainPath)) {
+      if (!file.endsWith('.yaml') && !file.endsWith('.yml')) continue;
+      const content = fs.readFileSync(path.join(domainPath, file), 'utf-8');
+      const idMatch = content.match(/^id:\s*(.+)$/m);
+      if (idMatch) out[idMatch[1].trim()] = domain.name;
+    }
+  }
+  return out;
+}
+const domainById = collectDomainById(rulesYamlDir);
+
 const merged = bundleRules.map((rule) => {
   const meta = metadataById[rule.id] || {};
   const requiredDataConnectors = rule.requiredDataConnectors || [];
@@ -125,7 +146,7 @@ const merged = bundleRules.map((rule) => {
     queryPeriod: rule.queryPeriod || meta.queryPeriod,
     triggerOperator: rule.triggerOperator || meta.triggerOperator,
     triggerThreshold: rule.triggerThreshold || meta.triggerThreshold,
-    category: meta.category || 'unknown',
+    category: domainById[rule.id] || meta.category || 'unknown',
     dataSources: meta.dataSources || [],
     connectors,
     dataTypes,
@@ -199,3 +220,111 @@ const infraPayload = {
 
 fs.writeFileSync(infraOutPath, JSON.stringify(infraPayload, null, 2), 'utf-8');
 console.log(`Wrote ${infraOutPath} (${infraFiles.length} files)`);
+
+// ---------------------------------------------------------------------------
+// Project manifest: counts and indexes generated from real repo files, so the
+// UI never hand-maintains numbers that can drift from the source of truth.
+// ---------------------------------------------------------------------------
+const manifestOutPath = path.join(uiRoot, 'src', 'data', 'projectManifest.json');
+
+function countFiles(dirPath, predicate) {
+  if (!fs.existsSync(dirPath)) return 0;
+  let count = 0;
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      count += countFiles(fullPath, predicate);
+    } else if (predicate(entry.name)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function countDirFiles(dirPath, predicate) {
+  if (!fs.existsSync(dirPath)) return 0;
+  return fs.readdirSync(dirPath).filter(predicate).length;
+}
+
+function parseAdrFrontMatter(filePath) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const idMatch = content.match(/^#\s*(ADR-\d+):\s*(.+)$/m);
+  const statusMatch = content.match(/^Status:\s*(.+)$/m);
+  return {
+    id: idMatch ? idMatch[1] : path.basename(filePath),
+    title: idMatch ? idMatch[2].trim() : path.basename(filePath),
+    status: statusMatch ? statusMatch[1].trim() : 'Unknown',
+    file: path.relative(gitRoot, filePath).split(path.sep).join('/'),
+  };
+}
+
+const workflowsDir = path.join(gitRoot, '.github', 'workflows');
+const workflowCount = countDirFiles(workflowsDir, (f) => f.endsWith('.yml') || f.endsWith('.yaml'));
+
+const terraformDirs = [
+  'terraform',
+  'terraform-aws-connector',
+  'terraform-honeypot',
+  'terraform-policy',
+  'terraform-soar',
+];
+const terraformModuleCount = terraformDirs.filter((d) => fs.existsSync(path.join(gitRoot, d))).length;
+
+const adrDir = path.join(gitRoot, 'docs', 'adr');
+const adrFiles = fs.existsSync(adrDir)
+  ? fs
+      .readdirSync(adrDir)
+      .filter((f) => /^\d{4}-.*\.md$/.test(f))
+      .sort()
+      .map((f) => parseAdrFrontMatter(path.join(adrDir, f)))
+  : [];
+
+function countEvidenceFiles(dirPath) {
+  if (!fs.existsSync(dirPath)) return { total: 0, real: 0 };
+  const files = fs.readdirSync(dirPath).filter((f) => f !== '.gitkeep');
+  return { total: files.length, real: files.filter((f) => !f.includes('.example.')).length };
+}
+
+const evidenceIndex = {
+  azure: countEvidenceFiles(path.join(gitRoot, 'evidence', 'azure')),
+  defender: countEvidenceFiles(path.join(gitRoot, 'evidence', 'defender')),
+  github: countEvidenceFiles(path.join(gitRoot, 'evidence', 'github')),
+  ui: countEvidenceFiles(path.join(gitRoot, 'evidence', 'ui')),
+};
+
+let validationReport = null;
+const validationReportPath = path.join(gitRoot, 'docs', 'detection-engineering', 'detection-validation-report.json');
+if (fs.existsSync(validationReportPath)) {
+  try {
+    validationReport = readJson(validationReportPath);
+  } catch {
+    validationReport = null;
+  }
+}
+
+const ruleDomains = {};
+for (const rule of merged) {
+  const domain = rule.category || 'unknown';
+  ruleDomains[domain] = (ruleDomains[domain] || 0) + 1;
+}
+
+const manifest = {
+  generatedAt: new Date().toISOString(),
+  rules: {
+    total: merged.length,
+    byDomain: ruleDomains,
+  },
+  terraform: {
+    modules: terraformModuleCount,
+    moduleNames: terraformDirs,
+  },
+  workflows: {
+    total: workflowCount,
+  },
+  adrs: adrFiles,
+  evidence: evidenceIndex,
+  validation: validationReport,
+};
+
+fs.writeFileSync(manifestOutPath, JSON.stringify(manifest, null, 2), 'utf-8');
+console.log(`Wrote ${manifestOutPath} (${merged.length} rules, ${workflowCount} workflows, ${terraformModuleCount} terraform modules, ${adrFiles.length} ADRs)`);

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T20:29:34.171Z",
+  "generatedAt": "2026-08-16T17:13:15.225Z",
   "totalFiles": 14,
   "totalLines": 2060,
   "modules": 8,
@@ -12,8 +12,8 @@
       "language": "hcl",
       "deploys": "Log Analytics workspace + Sentinel (SecurityInsights), remote azurerm state backend.",
       "lines": 19,
-      "bytes": 539,
-      "content": "terraform {\r\n  required_providers {\r\n    azurerm = {\r\n      source  = \"hashicorp/azurerm\"\r\n      version = \"~> 3.0\"\r\n    }\r\n  }\r\n  required_version = \">= 1.0.0\"\r\n\r\n  # Remote state in Azure Storage so the nightly drift-detection workflow can run\r\n  # `terraform plan` against the real, shared state. Configured at init time via\r\n  # `-backend-config` (see .github/workflows/drift-detection.yaml). For local-only\r\n  # experimentation, run `terraform init -backend=false`.\r\n  backend \"azurerm\" {}\r\n}\r\n\r\nprovider \"azurerm\" {\r\n  features {}\r\n}"
+      "bytes": 521,
+      "content": "terraform {\n  required_providers {\n    azurerm = {\n      source  = \"hashicorp/azurerm\"\n      version = \"~> 3.0\"\n    }\n  }\n  required_version = \">= 1.0.0\"\n\n  # Remote state in Azure Storage so the nightly drift-detection workflow can run\n  # `terraform plan` against the real, shared state. Configured at init time via\n  # `-backend-config` (see .github/workflows/drift-detection.yaml). For local-only\n  # experimentation, run `terraform init -backend=false`.\n  backend \"azurerm\" {}\n}\n\nprovider \"azurerm\" {\n  features {}\n}"
     },
     {
       "id": "terraform/variables.tf",
@@ -23,8 +23,8 @@
       "language": "hcl",
       "deploys": "Workspace name, region, and 90-day retention inputs.",
       "lines": 23,
-      "bytes": 667,
-      "content": "variable \"resource_group_name\" {\r\n  type        = string\r\n  description = \"The name of the resource group for Sentinel infrastructure.\"\r\n  default     = \"rg-sentinel-secops-prod\"\r\n}\r\n\r\nvariable \"location\" {\r\n  type        = string\r\n  description = \"The Azure region to deploy resources.\"\r\n  default     = \"eastus\"\r\n}\r\n\r\nvariable \"workspace_name\" {\r\n  type        = string\r\n  description = \"The name of the Log Analytics workspace.\"\r\n  default     = \"law-sentinel-secops-prod\"\r\n}\r\n\r\nvariable \"retention_in_days\" {\r\n  type        = number\r\n  description = \"The workspace data retention in days (Minimum 30 for Sentinel, 90 recommended for prod).\"\r\n  default     = 90\r\n}"
+      "bytes": 645,
+      "content": "variable \"resource_group_name\" {\n  type        = string\n  description = \"The name of the resource group for Sentinel infrastructure.\"\n  default     = \"rg-sentinel-secops-prod\"\n}\n\nvariable \"location\" {\n  type        = string\n  description = \"The Azure region to deploy resources.\"\n  default     = \"eastus\"\n}\n\nvariable \"workspace_name\" {\n  type        = string\n  description = \"The name of the Log Analytics workspace.\"\n  default     = \"law-sentinel-secops-prod\"\n}\n\nvariable \"retention_in_days\" {\n  type        = number\n  description = \"The workspace data retention in days (Minimum 30 for Sentinel, 90 recommended for prod).\"\n  default     = 90\n}"
     },
     {
       "id": "terraform/main.tf",
@@ -34,8 +34,8 @@
       "language": "hcl",
       "deploys": "Resource group, Log Analytics workspace, SecurityInsights solution.",
       "lines": 37,
-      "bytes": 1142,
-      "content": "resource \"azurerm_resource_group\" \"secops\" {\r\n  name     = var.resource_group_name\r\n  location = var.location\r\n\r\n  tags = {\r\n    Environment = \"Production\"\r\n    Workload    = \"SecurityOperations\"\r\n    ManagedBy   = \"Terraform\"\r\n  }\r\n}\r\n\r\nresource \"azurerm_log_analytics_workspace\" \"sentinel\" {\r\n  name                = var.workspace_name\r\n  location            = azurerm_resource_group.secops.location\r\n  resource_group_name = azurerm_resource_group.secops.name\r\n  sku                 = \"PerGB2018\"\r\n  retention_in_days   = var.retention_in_days\r\n\r\n  tags = {\r\n    Environment = \"Production\"\r\n    Workload    = \"SecurityOperations\"\r\n    ManagedBy   = \"Terraform\"\r\n  }\r\n}\r\n\r\nresource \"azurerm_log_analytics_solution\" \"sentinel\" {\r\n  solution_name         = \"SecurityInsights\"\r\n  location              = azurerm_resource_group.secops.location\r\n  resource_group_name   = azurerm_resource_group.secops.name\r\n  workspace_resource_id = azurerm_log_analytics_workspace.sentinel.id\r\n  workspace_name        = azurerm_log_analytics_workspace.sentinel.name\r\n\r\n  plan {\r\n    publisher = \"Microsoft\"\r\n    product   = \"OMSGallery/SecurityInsights\"\r\n  }\r\n}"
+      "bytes": 1106,
+      "content": "resource \"azurerm_resource_group\" \"secops\" {\n  name     = var.resource_group_name\n  location = var.location\n\n  tags = {\n    Environment = \"Production\"\n    Workload    = \"SecurityOperations\"\n    ManagedBy   = \"Terraform\"\n  }\n}\n\nresource \"azurerm_log_analytics_workspace\" \"sentinel\" {\n  name                = var.workspace_name\n  location            = azurerm_resource_group.secops.location\n  resource_group_name = azurerm_resource_group.secops.name\n  sku                 = \"PerGB2018\"\n  retention_in_days   = var.retention_in_days\n\n  tags = {\n    Environment = \"Production\"\n    Workload    = \"SecurityOperations\"\n    ManagedBy   = \"Terraform\"\n  }\n}\n\nresource \"azurerm_log_analytics_solution\" \"sentinel\" {\n  solution_name         = \"SecurityInsights\"\n  location              = azurerm_resource_group.secops.location\n  resource_group_name   = azurerm_resource_group.secops.name\n  workspace_resource_id = azurerm_log_analytics_workspace.sentinel.id\n  workspace_name        = azurerm_log_analytics_workspace.sentinel.name\n\n  plan {\n    publisher = \"Microsoft\"\n    product   = \"OMSGallery/SecurityInsights\"\n  }\n}"
     },
     {
       "id": "terraform/outputs.tf",
@@ -45,8 +45,8 @@
       "language": "hcl",
       "deploys": "Workspace and resource IDs consumed by downstream modules.",
       "lines": 14,
-      "bytes": 516,
-      "content": "output \"resource_group_name\" {\r\n  description = \"The name of the created Resource Group.\"\r\n  value       = azurerm_resource_group.secops.name\r\n}\r\n\r\noutput \"log_analytics_workspace_id\" {\r\n  description = \"The Workspace ID (Used for agent connections and API calls).\"\r\n  value       = azurerm_log_analytics_workspace.sentinel.workspace_id\r\n}\r\n\r\noutput \"log_analytics_workspace_name\" {\r\n  description = \"The actual Azure resource name of the workspace.\"\r\n  value       = azurerm_log_analytics_workspace.sentinel.name\r\n}"
+      "bytes": 503,
+      "content": "output \"resource_group_name\" {\n  description = \"The name of the created Resource Group.\"\n  value       = azurerm_resource_group.secops.name\n}\n\noutput \"log_analytics_workspace_id\" {\n  description = \"The Workspace ID (Used for agent connections and API calls).\"\n  value       = azurerm_log_analytics_workspace.sentinel.workspace_id\n}\n\noutput \"log_analytics_workspace_name\" {\n  description = \"The actual Azure resource name of the workspace.\"\n  value       = azurerm_log_analytics_workspace.sentinel.name\n}"
     },
     {
       "id": "terraform-aws-connector/main.tf",

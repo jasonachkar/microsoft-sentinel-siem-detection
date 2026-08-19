@@ -1,0 +1,635 @@
+{
+  "generatedAt": "2026-08-16T17:13:15.230Z",
+  "rules": {
+    "total": 16,
+    "byDomain": {
+      "cloud": 4,
+      "email": 2,
+      "endpoint": 3,
+      "identity": 5,
+      "network": 2
+    }
+  },
+  "terraform": {
+    "modules": 5,
+    "moduleNames": [
+      "terraform",
+      "terraform-aws-connector",
+      "terraform-honeypot",
+      "terraform-policy",
+      "terraform-soar"
+    ]
+  },
+  "workflows": {
+    "total": 3
+  },
+  "adrs": [
+    {
+      "id": "ADR-0001",
+      "title": "Detection-as-Code YAML Schema and Go Deployer",
+      "status": "Accepted",
+      "file": "docs/adr/0001-detection-as-code-schema-and-go-deployer.md"
+    },
+    {
+      "id": "ADR-0002",
+      "title": "Terraform-Managed Sentinel Infrastructure",
+      "status": "Accepted",
+      "file": "docs/adr/0002-terraform-managed-sentinel-infrastructure.md"
+    },
+    {
+      "id": "ADR-0003",
+      "title": "GitHub Actions OIDC Instead of Client Secrets",
+      "status": "Accepted",
+      "file": "docs/adr/0003-github-actions-oidc.md"
+    },
+    {
+      "id": "ADR-0004",
+      "title": "Scheduled Rules Before NRT Rules",
+      "status": "Accepted",
+      "file": "docs/adr/0004-scheduled-rules-vs-nrt-rules.md"
+    },
+    {
+      "id": "ADR-0005",
+      "title": "Native Tables With ASIM Strategy",
+      "status": "Accepted",
+      "file": "docs/adr/0005-native-tables-vs-asim.md"
+    },
+    {
+      "id": "ADR-0006",
+      "title": "Demo Telemetry vs Live Sentinel Telemetry in UI",
+      "status": "Accepted",
+      "file": "docs/adr/0006-demo-telemetry-vs-live-sentinel-ui.md"
+    },
+    {
+      "id": "ADR-0007",
+      "title": "Drift Detection With Terraform Plan",
+      "status": "Accepted",
+      "file": "docs/adr/0007-drift-detection-with-terraform-plan.md"
+    },
+    {
+      "id": "ADR-0008",
+      "title": "Human-Approved SOAR Containment",
+      "status": "Accepted",
+      "file": "docs/adr/0008-human-approved-soar-containment.md"
+    },
+    {
+      "id": "ADR-0009",
+      "title": "AWS CloudTrail Connector Trust Model",
+      "status": "Accepted",
+      "file": "docs/adr/0009-aws-cloudtrail-connector-trust-model.md"
+    },
+    {
+      "id": "ADR-0010",
+      "title": "Defender Portal Alignment",
+      "status": "Accepted",
+      "file": "docs/adr/0010-defender-portal-alignment.md"
+    },
+    {
+      "id": "ADR-0011",
+      "title": "Cost-Control Strategy for Portfolio Lab",
+      "status": "Accepted",
+      "file": "docs/adr/0011-cost-control-strategy.md"
+    },
+    {
+      "id": "ADR-0012",
+      "title": "Evidence-First Portfolio UI Design",
+      "status": "Accepted",
+      "file": "docs/adr/0012-evidence-first-portfolio-ui.md"
+    },
+    {
+      "id": "ADR-0013",
+      "title": "Custom Go Deployer vs. Microsoft Sentinel Repositories",
+      "status": "Accepted",
+      "file": "docs/adr/0013-go-deployer-vs-sentinel-repositories.md"
+    }
+  ],
+  "evidence": {
+    "azure": {
+      "total": 0,
+      "real": 0
+    },
+    "defender": {
+      "total": 0,
+      "real": 0
+    },
+    "github": {
+      "total": 0,
+      "real": 0
+    },
+    "ui": {
+      "total": 8,
+      "real": 8
+    }
+  },
+  "validation": {
+    "generatedAt": "2026-05-24T17:39:33.046773+00:00",
+    "scope": "metadata-and-sample-data-validation",
+    "notKqlExecution": true,
+    "summary": {
+      "rules": 16,
+      "ruleFailures": 0,
+      "ruleWarnings": 0,
+      "sampleFiles": 11,
+      "sampleErrors": 0,
+      "flagshipScenarios": 5,
+      "flagshipScenarioFailures": 0
+    },
+    "rules": [
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\cloud\\AzureAD_ServicePrincipal_Credential_Addition.yaml",
+        "name": "Service Principal Creation with Credential Addition",
+        "id": "4d4e41cd-a8b8-49f1-828e-fddbb8d74d12",
+        "severity": "High",
+        "requiredTables": [
+          "AuditLogs"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "CloudApplication.AppId=ServicePrincipalId",
+          "CloudApplication.Name=ServicePrincipalName"
+        ],
+        "tactics": [
+          "Persistence",
+          "PrivilegeEscalation"
+        ],
+        "techniques": [
+          "T1136.003"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\cloud\\KeyVault_Secret_Access_Anomaly.yaml",
+        "name": "Key Vault Secret Access Anomaly",
+        "id": "78c1c5cb-364d-4133-b7d1-46dbe3f0c629",
+        "severity": "High",
+        "requiredTables": [
+          "AzureDiagnostics"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "IP.Address=IPAddress",
+          "AzureResource.ResourceId=ResourceId"
+        ],
+        "tactics": [
+          "CredentialAccess",
+          "Collection"
+        ],
+        "techniques": [
+          "T1552.004"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\cloud\\Kubernetes_Suspicious_Exec.yaml",
+        "name": "Kubernetes: Suspicious Container Execution",
+        "id": "8a1b2c3d-4e5f-4a7b-8c9d-0e1f2a3b4c5d",
+        "severity": "High",
+        "requiredTables": [
+          "AKSAudit",
+          "AKSAuditAdmin"
+        ],
+        "entityMappings": [
+          "Account.Name=User",
+          "IP.Address=SourceIP"
+        ],
+        "tactics": [
+          "Execution"
+        ],
+        "techniques": [
+          "T1609"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\cloud\\Rare_Admin_Operations.yaml",
+        "name": "Rare Admin Operations (Entra ID + Azure Activity)",
+        "id": "dba8a2af-a17b-43fb-b5b7-09b2e659dd3a",
+        "severity": "Medium",
+        "requiredTables": [
+          "AuditLogs",
+          "AzureActivity"
+        ],
+        "entityMappings": [
+          "Account.Name=Actor"
+        ],
+        "tactics": [
+          "DefenseEvasion"
+        ],
+        "techniques": [
+          "T1562"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\email\\Phishing_Attachment_Patterns.yaml",
+        "name": "Phishing Attachment Patterns",
+        "id": "508a9f98-7817-4bb0-bf98-e966c3b14bea",
+        "severity": "Medium",
+        "requiredTables": [
+          "EmailAttachmentInfo",
+          "EmailEvents"
+        ],
+        "entityMappings": [
+          "Mailbox.MailboxPrimaryAddress=PrimaryRecipient",
+          "Account.Name=SenderAddress"
+        ],
+        "tactics": [
+          "InitialAccess"
+        ],
+        "techniques": [
+          "T1566.001"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\email\\Suspicious_Inbox_Rule_External_Forward.yaml",
+        "name": "Suspicious Inbox Rule External Forward",
+        "id": "d0fa0869-a23c-4a16-a154-80123250b257",
+        "severity": "High",
+        "requiredTables": [
+          "OfficeActivity"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "IP.Address=ClientIP"
+        ],
+        "tactics": [
+          "Collection"
+        ],
+        "techniques": [
+          "T1114.003"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\endpoint\\Credential_Dumping_LSASS_Access.yaml",
+        "name": "Credential Dumping via LSASS Access",
+        "id": "2cbf0368-8c26-4b6f-bc3f-15aa9e93ccfb",
+        "severity": "High",
+        "requiredTables": [
+          "DeviceProcessEvents"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "Host.HostName=DeviceName"
+        ],
+        "tactics": [
+          "CredentialAccess"
+        ],
+        "techniques": [
+          "T1003.001"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\endpoint\\Local_Admin_Group_Changes.yaml",
+        "name": "Local Admin Group Changes",
+        "id": "f32a9c55-5856-43ca-88b3-47996df8898a",
+        "severity": "Medium",
+        "requiredTables": [
+          "SecurityEvent"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "Host.HostName=Computer"
+        ],
+        "tactics": [
+          "PrivilegeEscalation",
+          "Persistence"
+        ],
+        "techniques": [
+          "T1098"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\endpoint\\Suspicious_PowerShell_Encoded_Command.yaml",
+        "name": "Suspicious PowerShell Encoded Command",
+        "id": "5aef5e7e-359b-4890-bb93-4c892b0cac40",
+        "severity": "High",
+        "requiredTables": [
+          "DeviceProcessEvents"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "Host.HostName=DeviceName"
+        ],
+        "tactics": [
+          "Execution",
+          "CommandAndControl"
+        ],
+        "techniques": [
+          "T1059.001",
+          "T1105"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\identity\\EntraID_Impossible_Travel_Signin.yaml",
+        "name": "Entra ID Impossible Travel Sign-in",
+        "id": "b34be2c6-772a-43a9-ab9b-f0e16f32c3be",
+        "severity": "Medium",
+        "requiredTables": [
+          "SigninLogs"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "IP.Address=IPAddress"
+        ],
+        "tactics": [
+          "InitialAccess",
+          "CredentialAccess"
+        ],
+        "techniques": [
+          "T1078.004"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\identity\\EntraID_MFA_Fatigue.yaml",
+        "name": "Entra ID MFA Fatigue",
+        "id": "35bde42b-3434-4674-bc4a-42e95a1fe772",
+        "severity": "Medium",
+        "requiredTables": [
+          "SigninLogs"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "IP.Address=IPAddress"
+        ],
+        "tactics": [
+          "CredentialAccess"
+        ],
+        "techniques": [
+          "T1621"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\identity\\EntraID_Password_Spray.yaml",
+        "name": "Entra ID Password Spray",
+        "id": "0710c724-a738-4b0f-af52-947ba4f01c0d",
+        "severity": "High",
+        "requiredTables": [
+          "SigninLogs"
+        ],
+        "entityMappings": [
+          "Account.Name=PrimaryAccount",
+          "IP.Address=IPAddress"
+        ],
+        "tactics": [
+          "CredentialAccess",
+          "InitialAccess"
+        ],
+        "techniques": [
+          "T1110.003"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\identity\\EntraID_Privileged_Role_Assignment.yaml",
+        "name": "Entra ID Privileged Role Assignment",
+        "id": "49207dbc-e316-4b48-94d6-68d6c2014d18",
+        "severity": "High",
+        "requiredTables": [
+          "AuditLogs"
+        ],
+        "entityMappings": [
+          "Account.Name=Initiator"
+        ],
+        "tactics": [
+          "Persistence",
+          "PrivilegeEscalation"
+        ],
+        "techniques": [
+          "T1098.003"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\identity\\EntraID_Risky_Signin_TOR_Watchlist.yaml",
+        "name": "Entra ID Risky Sign-in from TOR or Watchlist",
+        "id": "db69f50b-3f00-46cd-9f47-8ad0bc780209",
+        "severity": "High",
+        "requiredTables": [
+          "SigninLogs"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "IP.Address=IPAddress"
+        ],
+        "tactics": [
+          "InitialAccess",
+          "CommandAndControl"
+        ],
+        "techniques": [
+          "T1090.003",
+          "T1078.004"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\network\\Unusual_Outbound_Data_Volume_Rare_Destinations.yaml",
+        "name": "Unusual Outbound Data Volume to Rare Destination",
+        "id": "5b584395-6a5c-46c8-8de7-1239c7188fe5",
+        "severity": "High",
+        "requiredTables": [
+          "CommonSecurityLog"
+        ],
+        "entityMappings": [
+          "IP.Address=SourceIP",
+          "IP.Address=DestinationIP"
+        ],
+        "tactics": [
+          "Exfiltration"
+        ],
+        "techniques": [
+          "T1041"
+        ],
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "file": "sentinel-detection-pack\\rules-yaml\\network\\Unusual_RDP_SMB_Lateral_Movement.yaml",
+        "name": "Unusual RDP/SMB Lateral Movement",
+        "id": "2602788b-eab7-4bd6-acb6-a9bed75bb3d4",
+        "severity": "Medium",
+        "requiredTables": [
+          "SecurityEvent"
+        ],
+        "entityMappings": [
+          "Account.Name=Account",
+          "Host.HostName=DestHost",
+          "IP.Address=SourceIP"
+        ],
+        "tactics": [
+          "LateralMovement"
+        ],
+        "techniques": [
+          "T1021.001",
+          "T1021.002"
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    ],
+    "samples": [
+      {
+        "file": "sentinel-detection-pack\\sample-data\\aks-audit-exec.jsonl",
+        "records": 3,
+        "tables": [
+          "AKSAuditAdmin"
+        ],
+        "positiveSamples": 2,
+        "negativeSamples": 1
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\auditlogs-privileged-role-assignment.jsonl",
+        "records": 3,
+        "tables": [
+          "AuditLogs"
+        ],
+        "positiveSamples": 2,
+        "negativeSamples": 1
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\cloudtrail-root-login.jsonl",
+        "records": 2,
+        "tables": [
+          "CloudTrail"
+        ],
+        "positiveSamples": 1,
+        "negativeSamples": 1
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\commonsecuritylog_sample.jsonl",
+        "records": 5,
+        "tables": [
+          "AzureActivity",
+          "AzureDiagnostics",
+          "CommonSecurityLog"
+        ],
+        "positiveSamples": 0,
+        "negativeSamples": 0
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\deviceprocess_sample.jsonl",
+        "records": 4,
+        "tables": [
+          "DeviceProcessEvents"
+        ],
+        "positiveSamples": 0,
+        "negativeSamples": 0
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\identity_signins_sample.jsonl",
+        "records": 12,
+        "tables": [
+          "AuditLogs",
+          "SigninLogs"
+        ],
+        "positiveSamples": 0,
+        "negativeSamples": 0
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\keyvault-secret-access.jsonl",
+        "records": 3,
+        "tables": [
+          "AzureDiagnostics"
+        ],
+        "positiveSamples": 2,
+        "negativeSamples": 1
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\m365-inbox-forwarding.jsonl",
+        "records": 3,
+        "tables": [
+          "OfficeActivity"
+        ],
+        "positiveSamples": 2,
+        "negativeSamples": 1
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\officeactivity_sample.jsonl",
+        "records": 5,
+        "tables": [
+          "EmailAttachmentInfo",
+          "EmailEvents",
+          "OfficeActivity"
+        ],
+        "positiveSamples": 0,
+        "negativeSamples": 0
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\securityevent_auth_sample.jsonl",
+        "records": 5,
+        "tables": [
+          "SecurityEvent"
+        ],
+        "positiveSamples": 0,
+        "negativeSamples": 0
+      },
+      {
+        "file": "sentinel-detection-pack\\sample-data\\signinlogs-password-spray.jsonl",
+        "records": 4,
+        "tables": [
+          "SigninLogs"
+        ],
+        "positiveSamples": 3,
+        "negativeSamples": 1
+      }
+    ],
+    "flagshipScenarios": [
+      {
+        "rule": "EntraID_Password_Spray.yaml",
+        "sample": "signinlogs-password-spray.jsonl",
+        "description": "Entra ID password spray with positive and benign sign-in samples.",
+        "status": "pass",
+        "errors": []
+      },
+      {
+        "rule": "EntraID_Privileged_Role_Assignment.yaml",
+        "sample": "auditlogs-privileged-role-assignment.jsonl",
+        "description": "Privileged Entra ID role assignment audit samples.",
+        "status": "pass",
+        "errors": []
+      },
+      {
+        "rule": "KeyVault_Secret_Access_Anomaly.yaml",
+        "sample": "keyvault-secret-access.jsonl",
+        "description": "Key Vault secret access anomaly samples.",
+        "status": "pass",
+        "errors": []
+      },
+      {
+        "rule": "Kubernetes_Suspicious_Exec.yaml",
+        "sample": "aks-audit-exec.jsonl",
+        "description": "Kubernetes exec audit samples.",
+        "status": "pass",
+        "errors": []
+      },
+      {
+        "rule": "Suspicious_Inbox_Rule_External_Forward.yaml",
+        "sample": "m365-inbox-forwarding.jsonl",
+        "description": "M365 inbox forwarding samples.",
+        "status": "pass",
+        "errors": []
+      }
+    ],
+    "sampleErrors": []
+  }
+}
